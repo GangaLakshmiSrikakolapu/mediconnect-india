@@ -81,6 +81,8 @@ const HospitalRequest = () => {
       });
       if (authError) throw authError;
 
+      const userId = authData.user?.id;
+
       // 2. Upload QR if provided
       let qrUrl: string | null = null;
       if (qrFile) {
@@ -92,12 +94,13 @@ const HospitalRequest = () => {
         }
       }
 
-      // 3. Submit hospital request
+      // 3. Submit hospital request (edge function assigns hospital_admin role)
       const { data, error } = await supabase.functions.invoke('hospital-request', {
         body: {
           hospital_name: form.name, email: accountEmail, phone: form.phone,
           state: form.state, district: form.district, address: form.address,
           specializations: specs, upi_qr_url: qrUrl,
+          admin_user_id: userId,
           doctors: doctors.map(d => ({
             doctor_name: d.doctor_name, age: d.age, email: d.email,
             phone: d.phone, specialization: d.specialization,

@@ -58,7 +58,7 @@ const AuthPage = () => {
     }
     setLoading(true);
     try {
-      // For hospital admin, also check that a hospital exists with this email
+      // For hospital admin, check hospital exists and store its data
       if (selectedRole === 'hospitalAdmin') {
         const { data: hospitals } = await supabase
           .from('hospitals')
@@ -72,18 +72,13 @@ const AuthPage = () => {
         }
         
         const hospital = hospitals[0];
-        if (hospital.status === 'pending') {
-          toast({ title: 'Hospital under review', description: 'Your hospital registration is being reviewed. You\'ll be notified within 24-48 hours.', variant: 'destructive' });
-          setLoading(false);
-          return;
-        }
         if (hospital.status === 'rejected') {
           toast({ title: 'Hospital registration rejected', description: 'Contact support@mediconnect.in for details.', variant: 'destructive' });
           setLoading(false);
           return;
         }
 
-        // Store hospital data for dashboard
+        // Store hospital data for dashboard (pending hospitals can still login with banner)
         sessionStorage.setItem('mediconnect_hospital_admin', JSON.stringify({
           id: hospital.id, name: hospital.name, email: hospital.email,
           district: hospital.district, state: hospital.state, status: hospital.status,
