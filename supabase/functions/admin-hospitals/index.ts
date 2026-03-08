@@ -180,6 +180,23 @@ serve(async (req) => {
               }
             }
           }
+          // Generate access codes for all active doctors
+          const { data: allDoctors } = await supabaseAdmin
+            .from("doctors").select("id").eq("hospital_id", hospitalId).eq("status", "active");
+
+          for (const doc of allDoctors || []) {
+            // Check if code already exists
+            const { data: existing } = await supabaseAdmin
+              .from("doctor_access_codes").select("id").eq("doctor_id", doc.id).limit(1);
+            if (!existing || existing.length === 0) {
+              const code = `DOC-${doc.id.substring(0, 8).toUpperCase()}`;
+              await supabaseAdmin.from("doctor_access_codes").insert({
+                doctor_id: doc.id,
+                access_code: code,
+              });
+            }
+          }
+          console.log("Access codes generated for hospital:", hospitalId);
         }
       }
 

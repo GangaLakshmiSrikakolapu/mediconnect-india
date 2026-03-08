@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { PatientData } from '@/pages/FindHospital';
 import { toast } from '@/hooks/use-toast';
-import { QrCode } from 'lucide-react';
+import { QrCode, Loader2 } from 'lucide-react';
 
 const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSuccess, onBack }: {
   patientData: PatientData; hospitalId: string; doctorId: string; slotId: string; upiQrUrl: string | null; onSuccess: () => void; onBack: () => void;
@@ -23,9 +23,30 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
     if (!phone || !transactionId) return;
     setLoading(true);
     try {
+      // Get token number: count existing bookings for this doctor on this date
+      const { data: slotData } = await supabase.from('time_slots').select('slot_date').eq('id', slotId).single();
+      const bookingDate = slotData?.slot_date;
+
+      let tokenNumber = 1;
+      let waitingTime = 0;
+
+      if (bookingDate) {
+        // Count existing booked appointments for this doctor on this date
+        const { data: existingSlots } = await supabase
+          .from('time_slots')
+          .select('id')
+          .eq('doctor_id', doctorId)
+          .eq('slot_date', bookingDate)
+          .eq('is_booked', true);
+
+        tokenNumber = (existingSlots?.length || 0) + 1;
+        waitingTime = (tokenNumber - 1) * 15; // 15 min per patient
+      }
+
       // Book the slot
       await supabase.from('time_slots').update({ is_booked: true }).eq('id', slotId);
-      // Create appointment
+
+      // Create appointment with token
       const { data: appointment } = await supabase.from('appointments').insert({
         patient_name: patientData.name,
         patient_age: parseInt(patientData.age),
@@ -37,16 +58,25 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
         health_problem: patientData.healthProblem,
         payment_status: 'completed',
         transaction_id: transactionId,
-      }).select().single();
-      // Send email notification
+        token_number: tokenNumber,
+        waiting_time: waitingTime,
+        status: 'booked',
+      } as any).select().single();
+
+      // Send notifications
       if (appointment) {
         await supabase.functions.invoke('booking-notification', {
-          body: { appointmentId: appointment.id },
-        }).catch(console.error);
+          body: { appointmentId: (appointment as any).id },
+        }).catch(err => console.error('Notification error:', err));
       }
-      toast({ title: t.payment.success });
+
+      toast({
+        title: '✅ Appointment Confirmed!',
+        description: `Token Number: ${tokenNumber} | Estimated Wait: ${waitingTime} minutes`,
+      });
       onSuccess();
-    } catch {
+    } catch (err) {
+      console.error('Booking error:', err);
       toast({ title: t.payment.failure, variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -59,10 +89,12 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
         <CardHeader><CardTitle>{t.payment.title}</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label>{t.payment.email}</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
-            <div><Label>{t.payment.phone}</Label><Input required value={phone} onChange={e => setPhone(e.target.value)} /></div>
-            <div><Label>{t.payment.transactionId}</Label><Input required value={transactionId} onChange={e => setTransactionId(e.target.value)} /></div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? t.common.loading : t.payment.submit}</Button>
+            <div><Label>{t.payment.email}</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="patient@email.com" /></div>
+            <div><Label>{t.payment.phone} *</Label><Input required value={phone} onChange={e => setPhone(e.target.value)} placeholder="10-digit number" /></div>
+            <div><Label>{t.payment.transactionId} *</Label><Input required value={transactionId} onChange={e => setTransactionId(e.target.value)} /></div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</> : t.payment.submit}
+            </Button>
             <Button type="button" variant="outline" className="w-full" onClick={onBack}>{t.findHospital.back}</Button>
           </form>
         </CardContent>

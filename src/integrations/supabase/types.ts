@@ -27,7 +27,10 @@ export type Database = {
           patient_phone: string | null
           payment_status: string
           slot_id: string | null
+          status: string | null
+          token_number: number | null
           transaction_id: string | null
+          waiting_time: number | null
         }
         Insert: {
           created_at?: string
@@ -41,7 +44,10 @@ export type Database = {
           patient_phone?: string | null
           payment_status?: string
           slot_id?: string | null
+          status?: string | null
+          token_number?: number | null
           transaction_id?: string | null
+          waiting_time?: number | null
         }
         Update: {
           created_at?: string
@@ -55,7 +61,10 @@ export type Database = {
           patient_phone?: string | null
           payment_status?: string
           slot_id?: string | null
+          status?: string | null
+          token_number?: number | null
           transaction_id?: string | null
+          waiting_time?: number | null
         }
         Relationships: [
           {
@@ -80,6 +89,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      doctor_access_codes: {
+        Row: {
+          access_code: string
+          created_at: string
+          doctor_id: string
+          id: string
+        }
+        Insert: {
+          access_code: string
+          created_at?: string
+          doctor_id: string
+          id?: string
+        }
+        Update: {
+          access_code?: string
+          created_at?: string
+          doctor_id?: string
+          id?: string
+        }
+        Relationships: []
       }
       doctors: {
         Row: {
@@ -212,6 +242,42 @@ export type Database = {
           status?: Database["public"]["Enums"]["hospital_status"]
           updated_at?: string
           upi_qr_url?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          appointment_id: string
+          body: string
+          created_at: string
+          id: string
+          recipient_email: string | null
+          recipient_phone: string | null
+          recipient_type: string
+          status: string | null
+          subject: string
+        }
+        Insert: {
+          appointment_id: string
+          body: string
+          created_at?: string
+          id?: string
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recipient_type: string
+          status?: string | null
+          subject: string
+        }
+        Update: {
+          appointment_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recipient_type?: string
+          status?: string | null
+          subject?: string
         }
         Relationships: []
       }
