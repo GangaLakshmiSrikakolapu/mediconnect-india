@@ -53,9 +53,20 @@ const AdminDashboard = () => {
 
   const handleViewDetails = async (hospital: any) => {
     setDetailHospital(hospital);
-    // Fetch doctors for this hospital
-    const { data } = await supabase.from('doctors').select('*').eq('hospital_id', hospital.id);
-    setHospitalDoctors(data || []);
+    // Fetch doctors from doctors_request table (submitted by hospital)
+    const { data: reqDoctors } = await supabase.functions.invoke('admin-hospitals', {
+      body: { key: adminKey, action: 'get_doctors_request', hospitalId: hospital.id },
+    });
+    // Also fetch from doctors table
+    const { data: activeDoctors } = await supabase.from('doctors').select('*').eq('hospital_id', hospital.id);
+    // Merge: show request doctors if available, otherwise active doctors
+    const requestDocs = reqDoctors?.doctors || [];
+    const merged = requestDocs.length > 0 ? requestDocs.map((d: any) => ({
+      id: d.id, name: d.doctor_name, email: d.email, phone: d.phone,
+      specialization: d.specialization, education_details: d.education,
+      experience: d.experience, age: d.age,
+    })) : (activeDoctors || []);
+    setHospitalDoctors(merged);
     setDetailOpen(true);
   };
 
