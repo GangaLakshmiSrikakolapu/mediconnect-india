@@ -232,29 +232,29 @@ const PatientDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* AI Recommendations */}
+        {/* Quick Actions */}
         <Card className="border-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(214, 67%, 37%) 0%, hsl(174, 62%, 29%) 100%)' }}>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="h-5 w-5 text-white" />
-              <h3 className="font-heading font-bold text-white text-lg">AI Health Recommendations</h3>
+              <h3 className="font-heading font-bold text-white text-lg">Quick Actions</h3>
             </div>
-            <p className="text-white/60 text-sm mb-5">Personalised based on your health profile</p>
+            <p className="text-white/60 text-sm mb-5">What would you like to do today?</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {AI_RECOMMENDATIONS.map(rec => (
-                <Card key={rec.name} className="border-0 bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors">
-                  <CardContent className="p-4">
-                    <span className="text-2xl">{rec.icon}</span>
-                    <p className="font-semibold text-white text-sm mt-2">{rec.name}</p>
-                    <Badge className="bg-white/20 text-white/90 border-0 text-[10px] mt-1">{rec.reason}</Badge>
-                    <p className="text-white/50 text-xs mt-2">{rec.desc}</p>
-                    <Link to="/patient/find-hospitals">
-                      <Button size="sm" className="mt-3 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs h-8 w-full">
-                        Book Now
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+              {[
+                { icon: '🏥', name: 'Find a Hospital', desc: 'Search nearby hospitals by specialty', link: '/patient/find-hospitals' },
+                { icon: '📋', name: 'Medical Records', desc: 'View and manage your health records', link: '/patient/records' },
+                { icon: '🛡️', name: 'Insurance Info', desc: 'Check your insurance coverage', link: '/patient/insurance' },
+              ].map(item => (
+                <Link key={item.name} to={item.link}>
+                  <Card className="border-0 bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors cursor-pointer">
+                    <CardContent className="p-4">
+                      <span className="text-2xl">{item.icon}</span>
+                      <p className="font-semibold text-white text-sm mt-2">{item.name}</p>
+                      <p className="text-white/50 text-xs mt-1">{item.desc}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </CardContent>
