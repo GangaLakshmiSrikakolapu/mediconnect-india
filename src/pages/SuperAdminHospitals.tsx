@@ -61,7 +61,7 @@ const SuperAdminHospitals = () => {
     setChecklist(new Array(CHECKLIST.length).fill(false));
     setInternalNotes('');
     setRejectReason('');
-    const { data: reqDoctors } = await supabase.functions.invoke('admin-hospitals', { body: { key: adminKey, action: 'get_doctors_request', hospitalId: hospital.id } });
+    const { data: reqDoctors } = await supabase.functions.invoke('admin-hospitals', { body: { action: 'get_doctors_request', hospitalId: hospital.id } });
     const { data: activeDoctors } = await supabase.from('doctors').select('*').eq('hospital_id', hospital.id);
     const requestDocs = reqDoctors?.doctors || [];
     setHospitalDoctors(requestDocs.length > 0 ? requestDocs.map((d: any) => ({
