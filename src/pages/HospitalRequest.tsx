@@ -61,7 +61,7 @@ const HospitalRequest = () => {
     setStep('doctors');
   };
 
-  const addDoctor = (clearAfter: boolean = false) => {
+  const addDoctor = (clearAfter: boolean = true) => {
     const error = validateDoctor(currentDoctor);
     if (error) {
       setDoctorErrors(error);
@@ -71,9 +71,8 @@ const HospitalRequest = () => {
     setDoctorErrors(null);
     setDoctors(prev => [...prev, { ...currentDoctor }]);
     toast({ title: `Dr. ${currentDoctor.doctor_name} added successfully` });
-    if (clearAfter) {
-      setCurrentDoctor({ ...emptyDoctor });
-    }
+    // Always clear form after adding
+    setCurrentDoctor({ ...emptyDoctor });
     return true;
   };
 
@@ -247,8 +246,8 @@ const HospitalRequest = () => {
                 <p className="text-sm text-destructive font-medium">{doctorErrors}</p>
               )}
               <div className="flex gap-2">
-                <Button type="button" onClick={() => addDoctor(false)}>Submit Doctor</Button>
-                <Button type="button" variant="outline" onClick={() => addDoctor(true)}>
+                <Button type="button" onClick={() => addDoctor()}>Submit Doctor</Button>
+                <Button type="button" variant="outline" onClick={() => addDoctor()}>
                   <Plus className="h-4 w-4 mr-1" />Add Another Doctor
                 </Button>
               </div>
