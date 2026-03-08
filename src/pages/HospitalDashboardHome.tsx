@@ -37,7 +37,6 @@ const HospitalDashboardHome = () => {
   const { data: appointments } = useQuery({
     queryKey: ['hosp-appointments', hospital?.id],
     enabled: !!hospital?.id,
-    refetchInterval: 15000,
     queryFn: async () => {
       const { data } = await supabase
         .from('appointments')
@@ -47,6 +46,18 @@ const HospitalDashboardHome = () => {
       return data || [];
     },
   });
+
+  // Realtime subscription for appointments
+  useEffect(() => {
+    if (!hospital?.id) return;
+    const channel = supabase
+      .channel('hosp-appts-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments', filter: `hospital_id=eq.${hospital.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['hosp-appointments'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [hospital?.id, queryClient]);
 
   const todayAppts = appointments?.filter((a: any) => a.created_at?.startsWith(today)) || [];
   const confirmed = todayAppts.filter((a: any) => a.status === 'booked' || a.status === 'waiting' || a.status === 'in_progress').length;

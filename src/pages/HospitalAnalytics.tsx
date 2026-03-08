@@ -104,7 +104,7 @@ const HospitalAnalytics = () => {
     { icon: IndianRupee, label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, color: 'text-success bg-success/10' },
     { icon: Users, label: 'Unique Patients', value: new Set(allAppts.map((a: any) => a.patient_name)).size, color: 'text-primary bg-primary/10' },
     { icon: TrendingUp, label: 'Completed', value: completedCount, color: 'text-accent bg-accent/10' },
-    { icon: Star, label: 'Avg Rating', value: '4.5', color: 'text-warning bg-warning/10' },
+    { icon: Star, label: 'Avg Rating', value: (reviews || []).length > 0 ? ((reviews || []).reduce((s: number, r: any) => s + r.rating, 0) / (reviews || []).length).toFixed(1) : 'N/A', color: 'text-warning bg-warning/10' },
     { icon: XCircle, label: 'Cancel Rate', value: `${cancelRate}%`, color: 'text-destructive bg-destructive/10' },
   ];
 
