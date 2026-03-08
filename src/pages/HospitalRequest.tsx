@@ -189,7 +189,8 @@ const HospitalRequest = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><Label>Doctor Name *</Label><Input value={currentDoctor.name} onChange={e => setCurrentDoctor({ ...currentDoctor, name: e.target.value })} /></div>
-                <div><Label>Email</Label><Input type="email" value={currentDoctor.email} onChange={e => setCurrentDoctor({ ...currentDoctor, email: e.target.value })} /></div>
+                <div><Label>Age</Label><Input type="number" value={currentDoctor.age} onChange={e => setCurrentDoctor({ ...currentDoctor, age: e.target.value })} placeholder="e.g. 35" /></div>
+                <div><Label>Email (Gmail)</Label><Input type="email" value={currentDoctor.email} onChange={e => setCurrentDoctor({ ...currentDoctor, email: e.target.value })} placeholder="doctor@gmail.com" /></div>
                 <div><Label>Phone Number</Label><Input value={currentDoctor.phone} onChange={e => setCurrentDoctor({ ...currentDoctor, phone: e.target.value })} /></div>
                 <div><Label>Specialization *</Label>
                   <Select value={currentDoctor.specialization} onValueChange={v => setCurrentDoctor({ ...currentDoctor, specialization: v })}>
