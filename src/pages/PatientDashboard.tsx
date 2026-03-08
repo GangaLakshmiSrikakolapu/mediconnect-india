@@ -37,6 +37,7 @@ const getGreeting = () => {
 const PatientDashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
