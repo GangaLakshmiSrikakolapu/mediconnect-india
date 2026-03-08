@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,16 +5,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const body = await req.json();
-    const { hospital_name, email, phone, address, state, district, specializations, upi_qr_url, doctors } = body;
+    const { hospital_name, email, phone, address, state, district, specializations, upi_qr_url, doctors, admin_user_id } = body;
 
-    // Validate hospital fields
     if (!hospital_name || !hospital_name.trim()) {
       return new Response(JSON.stringify({ error: "Hospital name is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -47,7 +45,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate each doctor
     for (let i = 0; i < doctors.length; i++) {
       const d = doctors[i];
       if (!d.doctor_name?.trim()) {
@@ -55,23 +52,8 @@ serve(async (req) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Valid email is required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (!d.phone || d.phone.trim().length < 10) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Valid phone number is required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       if (!d.specialization?.trim()) {
         return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Specialization is required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (!d.education?.trim()) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Education details are required` }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -82,7 +64,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Save hospital with status = pending
+    // 1. Save hospital with status = pending and link admin_user_id
     console.log("Creating hospital request:", hospital_name);
     const { data: hospital, error: hospError } = await supabaseAdmin.from("hospitals").insert({
       name: hospital_name.trim(),
@@ -92,6 +74,7 @@ serve(async (req) => {
       address: address.trim(),
       specializations,
       upi_qr_url: upi_qr_url || null,
+      admin_user_id: admin_user_id || null,
       status: "pending",
     }).select().single();
 
@@ -110,7 +93,20 @@ serve(async (req) => {
     const hospitalId = hospital.id;
     console.log("Hospital created with ID:", hospitalId);
 
-    // 2. Save doctors to doctors_request table
+    // 2. Assign hospital_admin role to the user
+    if (admin_user_id) {
+      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert(
+        { user_id: admin_user_id, role: "hospital_admin" },
+        { onConflict: "user_id,role" }
+      );
+      if (roleError) {
+        console.error("Role assignment error:", roleError);
+      } else {
+        console.log("hospital_admin role assigned to user:", admin_user_id);
+      }
+    }
+
+    // 3. Save doctors to doctors_request table
     const doctorRequestRows = doctors.map((d: any) => ({
       hospital_id: hospitalId,
       doctor_name: d.doctor_name.trim(),
@@ -122,16 +118,12 @@ serve(async (req) => {
       age: d.age?.toString() || "",
     }));
 
-    console.log("Inserting", doctorRequestRows.length, "doctor requests");
     const { error: drError } = await supabaseAdmin.from("doctors_request").insert(doctorRequestRows);
     if (drError) {
       console.error("Doctor request insertion error:", drError);
-      return new Response(JSON.stringify({ error: "Hospital saved but failed to save doctors: " + drError.message }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
-    // 3. Also save to doctors table with status = pending
+    // 4. Also save to doctors table with status = pending
     const doctorRows = doctors.map((d: any) => ({
       name: d.doctor_name.trim(),
       age: parseInt(d.age) || 0,
@@ -147,13 +139,12 @@ serve(async (req) => {
     const { error: docError } = await supabaseAdmin.from("doctors").insert(doctorRows);
     if (docError) {
       console.error("Doctor table insertion error:", docError);
-      // Non-critical: doctors_request already saved
     }
 
     console.log("Hospital request submitted successfully:", hospitalId);
     return new Response(JSON.stringify({
       success: true,
-      message: "Hospital request submitted successfully. Your request will be reviewed by Super Admin.",
+      message: "Hospital request submitted successfully.",
       hospital_id: hospitalId,
       doctors_count: doctors.length,
     }), {
