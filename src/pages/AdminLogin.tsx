@@ -1,14 +1,16 @@
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-import { Shield, Lock, Loader2 } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 
 const AdminLogin = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [key, setKey] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,42 +19,47 @@ const AdminLogin = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('validate-admin-key', { body: { key } });
+      const { data, error } = await supabase.functions.invoke('validate-admin-key', {
+        body: { key },
+      });
       if (error || !data?.valid) {
-        toast({ title: 'Invalid key', variant: 'destructive' });
+        toast({ title: data?.message || 'Invalid key. Try again.', variant: 'destructive' });
         return;
       }
+      // Store admin session in sessionStorage (not localStorage for security)
       sessionStorage.setItem('mediconnect_admin', 'true');
       sessionStorage.setItem('mediconnect_admin_key', key);
       navigate('/admin/dashboard');
     } catch {
-      toast({ title: 'Invalid key', variant: 'destructive' });
+      toast({ title: 'Invalid key. Try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-16 bg-secondary/30">
-      <Card className="w-full max-w-md card-shadow border-0">
-        <CardHeader className="text-center pb-2">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-            <Shield className="h-8 w-8 text-primary" />
+    <div className="container py-16 max-w-md animate-fade-in">
+      <Card>
+        <CardHeader className="text-center">
+          <div className="mx-auto rounded-full bg-primary/10 p-4 mb-2">
+            <KeyRound className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-heading">Super Admin</CardTitle>
-          <CardDescription>Enter your private key to access the admin portal</CardDescription>
+          <CardTitle>{t.admin.login}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
+            <div>
               <Label>Private Key</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input required type="password" value={key} onChange={e => setKey(e.target.value)} placeholder="Enter admin private key" className="pl-10" />
-              </div>
+              <Input
+                required
+                type="password"
+                value={key}
+                onChange={e => setKey(e.target.value)}
+                placeholder="Enter admin private key"
+              />
             </div>
-            <Button type="submit" className="w-full rounded-xl" size="lg" disabled={loading}>
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Verifying...</> : 'Access Dashboard'}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? t.common.loading : t.admin.loginBtn}
             </Button>
           </form>
         </CardContent>
@@ -60,5 +67,4 @@ const AdminLogin = () => {
     </div>
   );
 };
-
 export default AdminLogin;

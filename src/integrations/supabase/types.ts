@@ -90,78 +90,6 @@ export type Database = {
           },
         ]
       }
-      audit_logs: {
-        Row: {
-          action: string
-          created_at: string
-          details: Json | null
-          entity_id: string | null
-          entity_type: string | null
-          id: string
-          ip_address: string | null
-          user_email: string | null
-          user_id: string | null
-          user_role: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          details?: Json | null
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          ip_address?: string | null
-          user_email?: string | null
-          user_id?: string | null
-          user_role?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          details?: Json | null
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          ip_address?: string | null
-          user_email?: string | null
-          user_id?: string | null
-          user_role?: string | null
-        }
-        Relationships: []
-      }
-      departments: {
-        Row: {
-          bed_count: number | null
-          created_at: string
-          description: string | null
-          head_doctor_id: string | null
-          hospital_id: string
-          icon: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          bed_count?: number | null
-          created_at?: string
-          description?: string | null
-          head_doctor_id?: string | null
-          hospital_id: string
-          icon?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          bed_count?: number | null
-          created_at?: string
-          description?: string | null
-          head_doctor_id?: string | null
-          hospital_id?: string
-          icon?: string | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
       doctor_access_codes: {
         Row: {
           access_code: string
@@ -272,295 +200,48 @@ export type Database = {
         }
         Relationships: []
       }
-      health_tips: {
-        Row: {
-          category: string
-          content: string | null
-          created_at: string
-          id: string
-          image_url: string | null
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string
-          content?: string | null
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          content?: string | null
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      hospital_insurance_plans: {
-        Row: {
-          cashless_available: boolean | null
-          created_at: string
-          hospital_id: string
-          id: string
-          notes: string | null
-          plan_id: string
-        }
-        Insert: {
-          cashless_available?: boolean | null
-          created_at?: string
-          hospital_id: string
-          id?: string
-          notes?: string | null
-          plan_id: string
-        }
-        Update: {
-          cashless_available?: boolean | null
-          created_at?: string
-          hospital_id?: string
-          id?: string
-          notes?: string | null
-          plan_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hospital_insurance_plans_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "insurance_plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       hospitals: {
         Row: {
           address: string
-          admin_user_id: string | null
-          bed_count: number | null
           created_at: string
-          description: string | null
           district: string
           email: string
-          emergency_phone: string | null
-          facilities: string[] | null
-          hospital_type: string | null
           id: string
           name: string
           phone: string
-          pincode: string | null
-          setup_complete: boolean | null
           specializations: string[]
           state: string
           status: Database["public"]["Enums"]["hospital_status"]
           updated_at: string
           upi_qr_url: string | null
-          website: string | null
-          year_established: number | null
         }
         Insert: {
           address: string
-          admin_user_id?: string | null
-          bed_count?: number | null
           created_at?: string
-          description?: string | null
           district: string
           email: string
-          emergency_phone?: string | null
-          facilities?: string[] | null
-          hospital_type?: string | null
           id?: string
           name: string
           phone: string
-          pincode?: string | null
-          setup_complete?: boolean | null
           specializations?: string[]
           state: string
           status?: Database["public"]["Enums"]["hospital_status"]
           updated_at?: string
           upi_qr_url?: string | null
-          website?: string | null
-          year_established?: number | null
         }
         Update: {
           address?: string
-          admin_user_id?: string | null
-          bed_count?: number | null
           created_at?: string
-          description?: string | null
           district?: string
           email?: string
-          emergency_phone?: string | null
-          facilities?: string[] | null
-          hospital_type?: string | null
           id?: string
           name?: string
           phone?: string
-          pincode?: string | null
-          setup_complete?: boolean | null
           specializations?: string[]
           state?: string
           status?: Database["public"]["Enums"]["hospital_status"]
           updated_at?: string
           upi_qr_url?: string | null
-          website?: string | null
-          year_established?: number | null
-        }
-        Relationships: []
-      }
-      insurance_companies: {
-        Row: {
-          contact_email: string | null
-          contact_person: string | null
-          contact_phone: string | null
-          created_at: string
-          id: string
-          irdai_number: string | null
-          logo_url: string | null
-          name: string
-          revenue_share_pct: number | null
-          status: string
-          type: string
-          updated_at: string
-          website: string | null
-        }
-        Insert: {
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          created_at?: string
-          id?: string
-          irdai_number?: string | null
-          logo_url?: string | null
-          name: string
-          revenue_share_pct?: number | null
-          status?: string
-          type?: string
-          updated_at?: string
-          website?: string | null
-        }
-        Update: {
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          created_at?: string
-          id?: string
-          irdai_number?: string | null
-          logo_url?: string | null
-          name?: string
-          revenue_share_pct?: number | null
-          status?: string
-          type?: string
-          updated_at?: string
-          website?: string | null
-        }
-        Relationships: []
-      }
-      insurance_plans: {
-        Row: {
-          age_max: number | null
-          age_min: number | null
-          cashless_available: boolean | null
-          company_id: string
-          coverage_max: number | null
-          coverage_min: number | null
-          created_at: string
-          exclusions: string[] | null
-          features: string[] | null
-          id: string
-          name: string
-          plan_type: string
-          premium_max: number | null
-          premium_min: number | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          age_max?: number | null
-          age_min?: number | null
-          cashless_available?: boolean | null
-          company_id: string
-          coverage_max?: number | null
-          coverage_min?: number | null
-          created_at?: string
-          exclusions?: string[] | null
-          features?: string[] | null
-          id?: string
-          name: string
-          plan_type?: string
-          premium_max?: number | null
-          premium_min?: number | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          age_max?: number | null
-          age_min?: number | null
-          cashless_available?: boolean | null
-          company_id?: string
-          coverage_max?: number | null
-          coverage_min?: number | null
-          created_at?: string
-          exclusions?: string[] | null
-          features?: string[] | null
-          id?: string
-          name?: string
-          plan_type?: string
-          premium_max?: number | null
-          premium_min?: number | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "insurance_plans_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "insurance_companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      medical_records: {
-        Row: {
-          created_at: string
-          file_url: string | null
-          hospital_name: string | null
-          id: string
-          notes: string | null
-          record_date: string | null
-          record_name: string
-          record_type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          file_url?: string | null
-          hospital_name?: string | null
-          id?: string
-          notes?: string | null
-          record_date?: string | null
-          record_name: string
-          record_type?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          file_url?: string | null
-          hospital_name?: string | null
-          id?: string
-          notes?: string | null
-          record_date?: string | null
-          record_name?: string
-          record_type?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -621,42 +302,6 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      reviews: {
-        Row: {
-          created_at: string
-          doctor_id: string | null
-          hospital_id: string
-          id: string
-          patient_name: string
-          rating: number
-          replied_at: string | null
-          reply_text: string | null
-          review_text: string | null
-        }
-        Insert: {
-          created_at?: string
-          doctor_id?: string | null
-          hospital_id: string
-          id?: string
-          patient_name?: string
-          rating?: number
-          replied_at?: string | null
-          reply_text?: string | null
-          review_text?: string | null
-        }
-        Update: {
-          created_at?: string
-          doctor_id?: string | null
-          hospital_id?: string
-          id?: string
-          patient_name?: string
-          rating?: number
-          replied_at?: string | null
-          reply_text?: string | null
-          review_text?: string | null
         }
         Relationships: []
       }
@@ -727,7 +372,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user" | "hospital_admin"
+      app_role: "admin" | "user"
       hospital_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -856,7 +501,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "hospital_admin"],
+      app_role: ["admin", "user"],
       hospital_status: ["pending", "approved", "rejected"],
     },
   },
