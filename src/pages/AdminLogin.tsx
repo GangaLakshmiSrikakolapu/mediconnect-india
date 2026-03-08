@@ -28,6 +28,7 @@ const AdminLogin = () => {
       }
       // Store admin session in sessionStorage (not localStorage for security)
       sessionStorage.setItem('mediconnect_admin', 'true');
+      sessionStorage.setItem('mediconnect_admin_key', key);
       navigate('/admin/dashboard');
     } catch {
       toast({ title: 'Invalid key. Try again.', variant: 'destructive' });
