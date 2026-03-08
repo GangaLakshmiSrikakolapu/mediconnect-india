@@ -17,12 +17,10 @@ interface AuthContextType extends AuthState {
   refreshRole: () => Promise<void>;
 }
 
-// Use globalThis to survive HMR reloads
+// Keep context instance stable across HMR reloads
 const AUTH_CONTEXT_KEY = '__mediconnect_auth_context__';
-if (!(globalThis as any)[AUTH_CONTEXT_KEY]) {
-  (globalThis as any)[AUTH_CONTEXT_KEY] = createContext<AuthContextType | null>(null);
-}
-const AuthContext = (globalThis as any)[AUTH_CONTEXT_KEY] as React.Context<AuthContextType | null>;
+const AuthContext = ((globalThis as any)[AUTH_CONTEXT_KEY] ??
+  ((globalThis as any)[AUTH_CONTEXT_KEY] = createContext<AuthContextType | null>(null))) as any;
 
 const ROLE_ROUTES: Record<AppRole, string> = {
   patient: '/patient/dashboard',
