@@ -22,26 +22,16 @@ const doctorNames = [
 ];
 
 const educationOptions = [
-  "MBBS – AIIMS Delhi",
-  "MD (Cardiology) – PGIMER Chandigarh",
-  "MS (ENT) – JIPMER Puducherry",
-  "MBBS – Osmania Medical College",
-  "MD – Apollo Institute of Medical Sciences",
-  "MBBS – CMC Vellore",
-  "MD (Pediatrics) – KGMU Lucknow",
-  "MS (Orthopedics) – MAMC Delhi",
-  "MBBS – Grant Medical College Mumbai",
-  "MD (Dermatology) – NIMHANS Bangalore",
-  "MBBS – Madras Medical College",
-  "MD (Neurology) – SGPGI Lucknow",
-  "MS (Ophthalmology) – Sankara Nethralaya",
-  "MBBS – KMC Manipal",
-  "MD (Pulmonology) – VPCI Delhi",
-  "MBBS – BHU Varanasi",
-  "MD (Psychiatry) – NIMHANS Bangalore",
-  "MS (General Surgery) – AIIMS Delhi",
-  "MBBS – Armed Forces Medical College Pune",
-  "MD (Gastroenterology) – Asian Institute Hyderabad",
+  "MBBS – AIIMS Delhi", "MD (Cardiology) – PGIMER Chandigarh",
+  "MS (ENT) – JIPMER Puducherry", "MBBS – Osmania Medical College",
+  "MD – Apollo Institute of Medical Sciences", "MBBS – CMC Vellore",
+  "MD (Pediatrics) – KGMU Lucknow", "MS (Orthopedics) – MAMC Delhi",
+  "MBBS – Grant Medical College Mumbai", "MD (Dermatology) – NIMHANS Bangalore",
+  "MBBS – Madras Medical College", "MD (Neurology) – SGPGI Lucknow",
+  "MS (Ophthalmology) – Sankara Nethralaya", "MBBS – KMC Manipal",
+  "MD (Pulmonology) – VPCI Delhi", "MBBS – BHU Varanasi",
+  "MD (Psychiatry) – NIMHANS Bangalore", "MS (General Surgery) – AIIMS Delhi",
+  "MBBS – Armed Forces Medical College Pune", "MD (Gastroenterology) – Asian Institute Hyderabad",
 ];
 
 const slotTimes = [
@@ -111,12 +101,24 @@ serve(async (req) => {
       });
     }
 
+    if (action === "get_doctors_request" && hospitalId) {
+      const { data, error } = await supabaseAdmin.from("doctors_request").select("*").eq("hospital_id", hospitalId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ doctors: data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "update_status" && hospitalId && status) {
       const { error } = await supabaseAdmin.from("hospitals").update({ status }).eq("id", hospitalId);
       if (error) throw error;
 
       if (status === "approved") {
-        // Activate all existing doctors for this hospital
+        // Move doctors from doctors_request to doctors table and activate
+        const { data: requestedDoctors } = await supabaseAdmin
+          .from("doctors_request").select("*").eq("hospital_id", hospitalId);
+
+        // Activate existing doctors
         await supabaseAdmin.from("doctors").update({ status: "active" }).eq("hospital_id", hospitalId);
 
         const { data: hospital } = await supabaseAdmin
@@ -132,13 +134,12 @@ serve(async (req) => {
             specCounts[d.specialization] = (specCounts[d.specialization] || 0) + 1;
           }
 
-          // Generate slots for existing doctors that don't have slots yet
-          const existingDoctorIds = (existingDoctors || []).map((d: any) => d.id);
-          for (const docId of existingDoctorIds) {
+          // Generate slots for existing doctors without slots
+          for (const doc of existingDoctors || []) {
             const { data: existingSlots } = await supabaseAdmin
-              .from("time_slots").select("id").eq("doctor_id", docId).limit(1);
+              .from("time_slots").select("id").eq("doctor_id", doc.id).limit(1);
             if (!existingSlots || existingSlots.length === 0) {
-              const slots = generateSlots(docId);
+              const slots = generateSlots(doc.id);
               await supabaseAdmin.from("time_slots").insert(slots);
             }
           }
@@ -170,7 +171,7 @@ serve(async (req) => {
               .from("doctors").insert(newDoctors).select();
 
             if (docErr) {
-              console.error("Error creating doctors:", docErr);
+              console.error("Error creating auto-fill doctors:", docErr);
             } else if (created) {
               const allSlots = created.flatMap((doc: any) => generateSlots(doc.id));
               if (allSlots.length > 0) {
@@ -192,6 +193,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Admin hospitals error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
