@@ -116,12 +116,15 @@ serve(async (req) => {
       if (error) throw error;
 
       if (status === "approved") {
+        // Activate all existing doctors for this hospital
+        await supabaseAdmin.from("doctors").update({ status: "active" }).eq("hospital_id", hospitalId);
+
         const { data: hospital } = await supabaseAdmin
           .from("hospitals").select("*").eq("id", hospitalId).single();
 
         if (hospital) {
           const { data: existingDoctors } = await supabaseAdmin
-            .from("doctors").select("name, specialization").eq("hospital_id", hospitalId);
+            .from("doctors").select("id, name, specialization").eq("hospital_id", hospitalId);
 
           const usedNames = new Set((existingDoctors || []).map((d: any) => d.name));
           const specCounts: Record<string, number> = {};
@@ -129,15 +132,25 @@ serve(async (req) => {
             specCounts[d.specialization] = (specCounts[d.specialization] || 0) + 1;
           }
 
+          // Generate slots for existing doctors that don't have slots yet
+          const existingDoctorIds = (existingDoctors || []).map((d: any) => d.id);
+          for (const docId of existingDoctorIds) {
+            const { data: existingSlots } = await supabaseAdmin
+              .from("time_slots").select("id").eq("doctor_id", docId).limit(1);
+            if (!existingSlots || existingSlots.length === 0) {
+              const slots = generateSlots(docId);
+              await supabaseAdmin.from("time_slots").insert(slots);
+            }
+          }
+
+          // Auto-fill: ensure at least 2 doctors per specialization
           const newDoctors: any[] = [];
           const specs = hospital.specializations || [];
-
-          // Ensure "General Medicine" is always included
           const allSpecs = specs.includes("General Medicine") ? specs : ["General Medicine", ...specs];
 
           for (const spec of allSpecs) {
             const existing = specCounts[spec] || 0;
-            const target = spec === "General Medicine" ? 3 : 2; // 3 for General Medicine, 2 for others
+            const target = spec === "General Medicine" ? 3 : 2;
             const needed = Math.max(0, target - existing);
 
             for (let i = 0; i < needed; i++) {
@@ -145,8 +158,9 @@ serve(async (req) => {
                 name: getUniqueName(usedNames),
                 specialization: spec,
                 hospital_id: hospitalId,
-                experience: Math.floor(Math.random() * 8) + 3, // 3-10 years
+                experience: Math.floor(Math.random() * 8) + 3,
                 education_details: getEducation(),
+                status: "active",
               });
             }
           }
@@ -166,6 +180,7 @@ serve(async (req) => {
             }
           }
         }
+      }
       }
 
       return new Response(JSON.stringify({ success: true }), {
