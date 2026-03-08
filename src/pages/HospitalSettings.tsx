@@ -31,7 +31,7 @@ const HospitalSettings = () => {
 
   useEffect(() => {
     const stored = sessionStorage.getItem('mediconnect_hospital_admin');
-    if (!stored) { navigate('/hospital-admin/login'); return; }
+    if (!stored) { navigate('/auth'); return; }
     const h = JSON.parse(stored);
     setHospital(h);
     setProfile({ name: h.name || '', phone: '', email: h.email || '', address: '' });

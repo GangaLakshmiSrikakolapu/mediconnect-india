@@ -14,8 +14,6 @@ import HospitalRequest from "./pages/HospitalRequest";
 import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
-import DoctorLogin from "./pages/DoctorLogin";
-import DoctorDashboard from "./pages/DoctorDashboard";
 import PatientSignup from "./pages/PatientSignup";
 import PatientDashboard from "./pages/PatientDashboard";
 import PatientFindHospitals from "./pages/PatientFindHospitals";
@@ -25,7 +23,6 @@ import PatientRecords from "./pages/PatientRecords";
 import PatientInsurance from "./pages/PatientInsurance";
 import PatientProfile from "./pages/PatientProfile";
 import PatientSettings from "./pages/PatientSettings";
-import HospitalAdminLogin from "./pages/HospitalAdminLogin";
 import HospitalDashboardHome from "./pages/HospitalDashboardHome";
 import HospitalAppointments from "./pages/HospitalAppointments";
 import HospitalDoctors from "./pages/HospitalDoctors";
@@ -72,9 +69,6 @@ const App = () => (
               <Route path="/patient/support" element={<PatientDashboard />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/doctor/login" element={<DoctorLogin />} />
-              <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
-              <Route path="/hospital-admin/login" element={<HospitalAdminLogin />} />
               <Route path="/hospital/dashboard" element={<HospitalDashboardHome />} />
               <Route path="/hospital/appointments" element={<HospitalAppointments />} />
               <Route path="/hospital/doctors" element={<HospitalDoctors />} />
@@ -86,8 +80,11 @@ const App = () => (
               <Route path="/hospital/staff" element={<HospitalSettings />} />
               <Route path="/hospital/billing" element={<HospitalSettings />} />
               <Route path="/hospital/announcements" element={<HospitalDashboardHome />} />
-              {/* Legacy redirect */}
+              {/* Legacy redirects */}
+              <Route path="/hospital-admin/login" element={<AuthPage />} />
               <Route path="/hospital-admin/dashboard" element={<HospitalDashboardHome />} />
+              <Route path="/doctor/login" element={<AuthPage />} />
+              <Route path="/doctor/dashboard" element={<AuthPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

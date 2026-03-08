@@ -39,7 +39,7 @@ const HospitalAdminLayout = ({ children, hospital, pendingCount = 0 }: HospitalA
 
   const handleLogout = () => {
     sessionStorage.removeItem('mediconnect_hospital_admin');
-    window.location.href = '/hospital-admin/login';
+    window.location.href = '/auth';
   };
 
   return (

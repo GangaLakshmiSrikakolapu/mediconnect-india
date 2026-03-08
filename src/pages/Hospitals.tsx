@@ -28,7 +28,7 @@ const Hospitals = () => {
             </Card>
           </Link>
 
-          <Link to="/hospital-admin/login">
+          <Link to="/auth">
             <Card className="h-full border-0 card-shadow hover:card-shadow-lg transition-all cursor-pointer group">
               <CardContent className="pt-8 pb-6 px-6 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-accent/20 transition-colors">

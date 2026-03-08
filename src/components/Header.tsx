@@ -45,7 +45,7 @@ const Header = () => {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link to={role === 'patient' ? '/patient/dashboard' : role === 'superAdmin' ? '/admin/dashboard' : role === 'doctor' ? '/doctor/dashboard' : role === 'hospitalAdmin' ? '/hospital-admin/dashboard' : '/'}>
+              <Link to={role === 'patient' ? '/patient/dashboard' : role === 'superAdmin' ? '/admin/dashboard' : role === 'hospitalAdmin' ? '/hospital/dashboard' : '/'}>
                 <Button variant="outline" size="sm" className="hidden md:inline-flex gap-2">
                   <User className="h-4 w-4" />
                   Dashboard

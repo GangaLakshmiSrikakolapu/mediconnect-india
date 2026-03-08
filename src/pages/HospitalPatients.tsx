@@ -15,7 +15,7 @@ const HospitalPatients = () => {
 
   useEffect(() => {
     const stored = sessionStorage.getItem('mediconnect_hospital_admin');
-    if (!stored) { navigate('/hospital-admin/login'); return; }
+    if (!stored) { navigate('/auth'); return; }
     setHospital(JSON.parse(stored));
   }, [navigate]);
 

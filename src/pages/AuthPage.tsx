@@ -10,24 +10,19 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth, getRedirectForRole, type AppRole } from '@/hooks/useAuth';
 import {
   Heart, Mail, Lock, Eye, EyeOff, Loader2, ArrowRight,
-  Building2, Stethoscope, Shield, Briefcase, User,
-  Hospital, Users, Sparkles
+  Building2, Shield, User, Hospital, Users, Sparkles
 } from 'lucide-react';
 
 const ROLES = [
   { id: 'patient' as AppRole, label: 'Patient', icon: User, emoji: '🏥' },
   { id: 'hospitalAdmin' as AppRole, label: 'Hospital Admin', icon: Building2, emoji: '🏨' },
-  { id: 'doctor' as AppRole, label: 'Doctor', icon: Stethoscope, emoji: '👨‍⚕️' },
   { id: 'superAdmin' as AppRole, label: 'Super Admin', icon: Shield, emoji: '🛡️' },
-  { id: 'insurancePartner' as AppRole, label: 'Insurance', icon: Briefcase, emoji: '💼' },
 ];
 
 const PLACEHOLDERS: Record<AppRole, string> = {
   patient: 'Enter your email address',
   hospitalAdmin: 'Enter hospital admin email',
-  doctor: 'Enter your doctor email',
   superAdmin: 'Enter super admin email',
-  insurancePartner: 'Enter partner email',
 };
 
 const CITIES = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata', 'Kharar', 'Chandigarh', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Patna', 'Bhopal', 'Indore', 'Nagpur', 'Visakhapatnam', 'Coimbatore', 'Kochi', 'Surat'];
@@ -36,7 +31,9 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const { user, role: authRole, loading: authLoading } = useAuth();
   const [selectedRole, setSelectedRole] = useState<AppRole>(() => {
-    return (localStorage.getItem('mediconnect_last_role') as AppRole) || 'patient';
+    const last = localStorage.getItem('mediconnect_last_role') as AppRole;
+    if (last === 'patient' || last === 'hospitalAdmin' || last === 'superAdmin') return last;
+    return 'patient';
   });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,7 +44,6 @@ const AuthPage = () => {
   const [forgotSent, setForgotSent] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
 
-  // Auto-redirect if already authenticated
   useEffect(() => {
     if (!authLoading && user && authRole) {
       navigate(getRedirectForRole(authRole), { replace: true });
@@ -62,11 +58,43 @@ const AuthPage = () => {
     }
     setLoading(true);
     try {
+      // For hospital admin, also check that a hospital exists with this email
+      if (selectedRole === 'hospitalAdmin') {
+        const { data: hospitals } = await supabase
+          .from('hospitals')
+          .select('id, name, district, state, email, status')
+          .eq('email', email.trim());
+        
+        if (!hospitals || hospitals.length === 0) {
+          toast({ title: 'No hospital found with this email', description: 'Register your hospital first.', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+        
+        const hospital = hospitals[0];
+        if (hospital.status === 'pending') {
+          toast({ title: 'Hospital under review', description: 'Your hospital registration is being reviewed. You\'ll be notified within 24-48 hours.', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+        if (hospital.status === 'rejected') {
+          toast({ title: 'Hospital registration rejected', description: 'Contact support@mediconnect.in for details.', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+
+        // Store hospital data for dashboard
+        sessionStorage.setItem('mediconnect_hospital_admin', JSON.stringify({
+          id: hospital.id, name: hospital.name, email: hospital.email,
+          district: hospital.district, state: hospital.state, status: hospital.status,
+        }));
+      }
+
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setFailedAttempts(p => p + 1);
         if (error.message.includes('Invalid login')) {
-          toast({ title: 'Incorrect email or password', description: failedAttempts >= 4 ? 'Too many attempts. Account may be locked.' : undefined, variant: 'destructive' });
+          toast({ title: 'Incorrect email or password', description: failedAttempts >= 4 ? 'Too many attempts.' : undefined, variant: 'destructive' });
         } else {
           toast({ title: error.message, variant: 'destructive' });
         }
@@ -104,9 +132,7 @@ const AuthPage = () => {
     switch (selectedRole) {
       case 'patient': return <Link to="/patient/signup" className="text-primary font-semibold hover:underline">Register here</Link>;
       case 'hospitalAdmin': return <Link to="/hospital-request" className="text-primary font-semibold hover:underline">Register your hospital</Link>;
-      case 'doctor': return <span className="text-muted-foreground">Doctors are added by Hospital Admin — contact your hospital</span>;
       case 'superAdmin': return <span className="text-muted-foreground">Super Admin accounts are system-created only</span>;
-      case 'insurancePartner': return <span className="text-muted-foreground">Contact us at partner@mediconnect.in</span>;
     }
   };
 
@@ -120,40 +146,25 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Animated Medical Illustration */}
+      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(214, 75%, 22%) 0%, hsl(214, 67%, 37%) 100%)' }}>
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
-          {/* Logo */}
           <div className="flex items-center gap-3">
             <Heart className="h-10 w-10 text-white fill-white/20" />
             <span className="text-2xl font-heading font-bold text-white">MEDICONNECT INDIA</span>
           </div>
 
-          {/* Center content */}
           <div className="flex-1 flex flex-col justify-center max-w-lg">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl xl:text-5xl font-heading font-bold text-white leading-tight mb-6"
-            >
+            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              className="text-4xl xl:text-5xl font-heading font-bold text-white leading-tight mb-6">
               India's Complete Healthcare Network
             </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-white/70 text-lg mb-10"
-            >
+            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="text-white/70 text-lg mb-10">
               Book appointments, find hospitals, and manage your health — all in one place.
             </motion.p>
 
-            {/* Trust Badges */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="flex gap-6"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="flex gap-6">
               {[
                 { icon: Hospital, label: '10,000+ Hospitals' },
                 { icon: Users, label: '2M+ Patients' },
@@ -166,39 +177,27 @@ const AuthPage = () => {
               ))}
             </motion.div>
 
-            {/* Floating SVG shapes */}
             <div className="absolute top-20 right-20 opacity-10">
               <svg width="200" height="200" viewBox="0 0 200 200"><circle cx="100" cy="100" r="80" stroke="white" strokeWidth="2" fill="none" /><circle cx="100" cy="100" r="40" stroke="white" strokeWidth="1" fill="none" /></svg>
             </div>
-            <div className="absolute bottom-40 right-40 opacity-10">
-              <svg width="120" height="120" viewBox="0 0 120 120"><rect x="20" y="20" width="80" height="80" rx="16" stroke="white" strokeWidth="2" fill="none" /></svg>
-            </div>
           </div>
 
-          {/* City Marquee */}
           <div className="overflow-hidden">
-            <motion.div
-              animate={{ x: [0, -1200] }}
-              transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-              className="flex gap-4 whitespace-nowrap"
-            >
+            <motion.div animate={{ x: [0, -1200] }} transition={{ duration: 30, repeat: Infinity, ease: 'linear' }} className="flex gap-4 whitespace-nowrap">
               {[...CITIES, ...CITIES].map((city, i) => (
-                <span key={i} className="text-white/40 text-sm">
-                  {city} {i < CITIES.length * 2 - 1 ? '·' : ''}
-                </span>
+                <span key={i} className="text-white/40 text-sm">{city} {i < CITIES.length * 2 - 1 ? '·' : ''}</span>
               ))}
             </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - Auth Forms */}
+      {/* Right Panel */}
       <div className="w-full lg:w-[45%] flex items-center justify-center p-6 md:p-12 bg-background">
         <div className="w-full max-w-md">
           <AnimatePresence mode="wait">
             {showForgot ? (
               <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                {/* Forgot Password */}
                 <div className="text-center mb-8">
                   <Heart className="h-10 w-10 text-primary fill-primary/20 mx-auto mb-4" />
                   <h2 className="text-2xl font-heading font-bold">Reset Password</h2>
@@ -230,7 +229,6 @@ const AuthPage = () => {
               </motion.div>
             ) : (
               <motion.div key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                {/* Logo */}
                 <div className="text-center mb-6">
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <Heart className="h-8 w-8 text-primary fill-primary/20" />
@@ -240,14 +238,14 @@ const AuthPage = () => {
                   <p className="text-muted-foreground mt-1">Sign in to your account</p>
                 </div>
 
-                {/* Role Selector */}
-                <div className="flex flex-wrap gap-1.5 p-1.5 bg-muted rounded-2xl mb-6">
+                {/* Role Selector - 3 roles only */}
+                <div className="flex gap-1.5 p-1.5 bg-muted rounded-2xl mb-6">
                   {ROLES.map(r => (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => setSelectedRole(r.id)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all flex-1 min-w-0 justify-center ${
+                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium transition-all flex-1 justify-center ${
                         selectedRole === r.id
                           ? 'bg-primary text-primary-foreground shadow-sm'
                           : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
@@ -265,12 +263,8 @@ const AuthPage = () => {
                     <Label className="text-sm font-medium">Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        required type="email" value={email} onChange={e => setEmail(e.target.value)}
-                        placeholder={PLACEHOLDERS[selectedRole]}
-                        className="pl-10 h-12 rounded-xl"
-                        autoFocus
-                      />
+                      <Input required type="email" value={email} onChange={e => setEmail(e.target.value)}
+                        placeholder={PLACEHOLDERS[selectedRole]} className="pl-10 h-12 rounded-xl" autoFocus />
                     </div>
                   </div>
 
@@ -278,11 +272,9 @@ const AuthPage = () => {
                     <Label className="text-sm font-medium">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        required type={showPassword ? 'text' : 'password'} value={password}
+                      <Input required type={showPassword ? 'text' : 'password'} value={password}
                         onChange={e => setPassword(e.target.value)} placeholder="Enter your password"
-                        className="pl-10 pr-10 h-12 rounded-xl"
-                      />
+                        className="pl-10 pr-10 h-12 rounded-xl" />
                       <button type="button" onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -290,7 +282,6 @@ const AuthPage = () => {
                     </div>
                   </div>
 
-                  {/* Remember + Forgot */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Checkbox id="remember" />
@@ -309,13 +300,11 @@ const AuthPage = () => {
 
                   <Button type="submit"
                     className="w-full h-[52px] rounded-full bg-gradient-to-r from-[hsl(214,75%,22%)] to-primary text-base font-semibold shadow-lg hover:shadow-xl transition-all"
-                    disabled={loading}
-                  >
+                    disabled={loading}>
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Sign In</span><ArrowRight className="h-4 w-4 ml-2" /></>}
                   </Button>
                 </form>
 
-                {/* Register Link */}
                 <div className="text-center text-sm text-muted-foreground mt-6 space-y-1">
                   <p>Don't have an account? {getRegisterLink()}</p>
                 </div>
