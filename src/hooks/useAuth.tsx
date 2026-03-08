@@ -35,21 +35,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user: null, session: null, role: null, loading: true, profile: null,
   });
 
-  const detectRole = useCallback(async (userId: string): Promise<AppRole> => {
+  const detectRole = useCallback(async (userId: string, email?: string | null): Promise<AppRole> => {
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
-    if (roles?.length) {
-      if (roles.some(r => r.role === 'admin')) return 'superAdmin';
-      if (roles.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
+
+    if (roles?.some(r => r.role === 'admin')) return 'superAdmin';
+    if (roles?.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
+
+    // Fallback for older records where role row might be missing but hospital is linked
+    const { data: linkedHospital } = await supabase
+      .from('hospitals')
+      .select('id')
+      .eq('admin_user_id', userId)
+      .maybeSingle();
+
+    if (linkedHospital) return 'hospitalAdmin';
+
+    // Soft fallback: only when user explicitly owns a hospital email and logs in with it
+    if (email) {
+      const { data: emailHospital } = await supabase
+        .from('hospitals')
+        .select('id')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+      if (emailHospital) return 'hospitalAdmin';
     }
-    // Check localStorage fallback
-    const stored = localStorage.getItem('mediconnect_role');
-    if (stored === 'hospitalAdmin' || stored === 'superAdmin') return stored as AppRole;
+
     return 'patient';
   }, []);
 
   const refreshRole = useCallback(async () => {
     if (!state.user) return;
-    const role = await detectRole(state.user.id);
+    const role = await detectRole(state.user.id, state.user.email);
     setState(s => ({ ...s, role }));
     localStorage.setItem('mediconnect_role', role);
   }, [state.user, detectRole]);
@@ -57,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const role = await detectRole(session.user.id);
+        const role = await detectRole(session.user.id, session.user.email);
         const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
         setState({ user: session.user, session, role, loading: false, profile });
         localStorage.setItem('mediconnect_role', role);
@@ -65,12 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setState({ user: null, session: null, role: null, loading: false, profile: null });
         localStorage.removeItem('mediconnect_role');
+        localStorage.removeItem('mediconnect_last_role');
       }
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const role = await detectRole(session.user.id);
+        const role = await detectRole(session.user.id, session.user.email);
         const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
         setState({ user: session.user, session, role, loading: false, profile });
       } else {
@@ -83,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
     } finally {
       localStorage.removeItem('mediconnect_role');
       localStorage.removeItem('mediconnect_last_role');

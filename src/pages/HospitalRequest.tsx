@@ -84,6 +84,9 @@ const HospitalRequest = () => {
       if (authError) throw authError;
 
       const userId = authData.user?.id;
+      if (!userId) {
+        throw new Error('Unable to create hospital admin account. Please try again.');
+      }
 
       // 2. Upload QR if provided
       let qrUrl: string | null = null;
