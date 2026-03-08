@@ -263,7 +263,7 @@ const HospitalRequest = () => {
                 {doctors.map((d, i) => (
                   <div key={i} className="p-3 rounded-lg bg-muted/50 text-sm">
                     <p className="font-medium">Dr. {d.name}</p>
-                    <p className="text-muted-foreground">{d.specialization} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
+                    <p className="text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
                     {(d.email || d.phone) && <p className="text-muted-foreground">{d.email} {d.phone && `· ${d.phone}`}</p>}
                   </div>
                 ))}
