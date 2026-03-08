@@ -87,24 +87,35 @@ serve(async (req) => {
           .eq("id", hospitalId)
           .single();
 
-        if (hospital && hospital.specializations && hospital.specializations.length > 0) {
+      if (hospital) {
           // Check if doctors already exist for this hospital
           const { data: existingDoctors } = await supabaseAdmin
             .from("doctors")
-            .select("specialization")
+            .select("specialization, name")
             .eq("hospital_id", hospitalId);
 
+          const existingNames = new Set((existingDoctors || []).map((d: any) => d.name));
           const existingSpecs = new Set((existingDoctors || []).map((d: any) => d.specialization));
 
+          // Always ensure 2 default General Medicine doctors exist
+          const defaultDoctors = [
+            { name: "Arjun Kumar", specialization: "General Medicine", experience: 5 },
+            { name: "Priya Sharma", specialization: "General Medicine", experience: 7 },
+          ].filter(d => !existingNames.has(d.name));
+
           // Create doctors for each specialization that doesn't have one yet
-          const newDoctors = hospital.specializations
-            .filter((spec: string) => !existingSpecs.has(spec))
+          const specDoctors = (hospital.specializations || [])
+            .filter((spec: string) => !existingSpecs.has(spec) && spec !== "General Medicine")
             .map((spec: string) => ({
               name: specializationDoctorNames[spec] || `Dr. ${spec} Specialist`,
               specialization: spec,
-              hospital_id: hospitalId,
-              experience: Math.floor(Math.random() * 15) + 3, // 3-17 years
+              experience: Math.floor(Math.random() * 15) + 3,
             }));
+
+          const newDoctors = [...defaultDoctors, ...specDoctors].map(d => ({
+            ...d,
+            hospital_id: hospitalId,
+          }));
 
           if (newDoctors.length > 0) {
             const { data: createdDoctors, error: doctorError } = await supabaseAdmin
