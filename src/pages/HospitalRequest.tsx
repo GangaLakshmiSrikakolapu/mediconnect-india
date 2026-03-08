@@ -70,9 +70,11 @@ const HospitalRequest = () => {
     if (doctors.length === 0) { toast({ title: 'Add at least one doctor', variant: 'destructive' }); return; }
     setLoading(true);
     try {
+      const normalizedEmail = accountEmail.trim().toLowerCase();
+
       // 1. Create Supabase auth account
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: accountEmail,
+        email: normalizedEmail,
         password: accountPassword,
         options: {
           data: { full_name: form.name + ' Admin', role: 'hospitalAdmin' },
