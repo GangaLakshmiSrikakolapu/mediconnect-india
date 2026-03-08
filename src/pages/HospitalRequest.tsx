@@ -218,7 +218,7 @@ const HospitalRequest = () => {
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
                         <p className="font-medium text-sm">Dr. {d.name}</p>
-                        <p className="text-xs text-muted-foreground">{d.specialization} {d.education && `· ${d.education}`}</p>
+                        <p className="text-xs text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`}</p>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => removeDoctor(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
