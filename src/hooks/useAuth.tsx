@@ -35,15 +35,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user: null, session: null, role: null, loading: true, profile: null,
   });
 
-  const detectRole = useCallback(async (userId: string): Promise<AppRole> => {
+  const detectRole = useCallback(async (userId: string, email?: string | null): Promise<AppRole> => {
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
-    if (roles?.length) {
-      if (roles.some(r => r.role === 'admin')) return 'superAdmin';
-      if (roles.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
+
+    if (roles?.some(r => r.role === 'admin')) return 'superAdmin';
+    if (roles?.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
+
+    // Fallback for older records where role row might be missing but hospital is linked
+    const { data: linkedHospital } = await supabase
+      .from('hospitals')
+      .select('id')
+      .eq('admin_user_id', userId)
+      .maybeSingle();
+
+    if (linkedHospital) return 'hospitalAdmin';
+
+    // Soft fallback: only when user explicitly owns a hospital email and logs in with it
+    if (email) {
+      const { data: emailHospital } = await supabase
+        .from('hospitals')
+        .select('id')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+      if (emailHospital) return 'hospitalAdmin';
     }
-    // Check localStorage fallback
-    const stored = localStorage.getItem('mediconnect_role');
-    if (stored === 'hospitalAdmin' || stored === 'superAdmin') return stored as AppRole;
+
     return 'patient';
   }, []);
 
