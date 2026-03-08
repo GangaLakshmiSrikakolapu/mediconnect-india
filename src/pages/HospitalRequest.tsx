@@ -99,7 +99,7 @@ const HospitalRequest = () => {
       // 3. Submit hospital request (edge function assigns hospital_admin role)
       const { data, error } = await supabase.functions.invoke('hospital-request', {
         body: {
-          hospital_name: form.name, email: accountEmail, phone: form.phone,
+          hospital_name: form.name, email: normalizedEmail, phone: form.phone,
           state: form.state, district: form.district, address: form.address,
           specializations: specs, upi_qr_url: qrUrl,
           admin_user_id: userId,
