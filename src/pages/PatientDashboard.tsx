@@ -343,23 +343,25 @@ const PatientDashboard = () => {
         )}
 
         {/* Health Tips */}
-        <div>
-          <h3 className="font-heading font-bold text-lg mb-4">Health Tips</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {HEALTH_TIPS.map(tip => (
-              <Card key={tip.title} className="border-0 card-shadow hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="w-full h-28 rounded-xl bg-gradient-to-br from-muted to-secondary flex items-center justify-center mb-3">
-                    <span className="text-3xl opacity-30">{tip.category === 'Nutrition' ? '🥗' : tip.category === 'Fitness' ? '🏃' : '🧠'}</span>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] mb-2">{tip.category}</Badge>
-                  <p className="font-semibold text-sm">{tip.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tip.preview}</p>
-                </CardContent>
-              </Card>
-            ))}
+        {(healthTips || []).length > 0 && (
+          <div>
+            <h3 className="font-heading font-bold text-lg mb-4">Health Tips</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(healthTips || []).map((tip: any) => (
+                <Card key={tip.id} className="border-0 card-shadow hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="w-full h-28 rounded-xl bg-gradient-to-br from-muted to-secondary flex items-center justify-center mb-3">
+                      <span className="text-3xl opacity-30">{tip.category === 'Nutrition' ? '🥗' : tip.category === 'Fitness' ? '🏃' : '🧠'}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] mb-2">{tip.category}</Badge>
+                    <p className="font-semibold text-sm">{tip.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tip.content || ''}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="h-8" />
       </div>
