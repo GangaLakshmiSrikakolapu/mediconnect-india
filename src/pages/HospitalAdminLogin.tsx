@@ -52,7 +52,7 @@ const HospitalAdminLogin = () => {
       district: hospital.district,
       state: hospital.state,
     }));
-    navigate('/hospital-admin/dashboard');
+    navigate('/hospital/dashboard');
   };
 
   return (

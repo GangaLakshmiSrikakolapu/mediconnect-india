@@ -13,6 +13,7 @@ const Header = () => {
   // Hide header on auth pages and patient dashboard (has its own layout)
   if (location.pathname === '/auth' || location.pathname === '/auth/reset-password') return null;
   if (location.pathname.startsWith('/patient/')) return null;
+  if (location.pathname.startsWith('/hospital/')) return null;
 
   const navLinks = [
     { path: '/', label: 'Home' },
