@@ -14,6 +14,7 @@ import { CheckCircle, Plus, Trash2, UserPlus, ArrowRight } from 'lucide-react';
 
 type DoctorEntry = {
   name: string;
+  age: string;
   email: string;
   phone: string;
   specialization: string;
@@ -21,7 +22,7 @@ type DoctorEntry = {
   experience: string;
 };
 
-const emptyDoctor: DoctorEntry = { name: '', email: '', phone: '', specialization: '', education: '', experience: '' };
+const emptyDoctor: DoctorEntry = { name: '', age: '', email: '', phone: '', specialization: '', education: '', experience: '' };
 
 const HospitalRequest = () => {
   const { t } = useLanguage();
@@ -88,6 +89,7 @@ const HospitalRequest = () => {
       // Insert doctors linked to hospital
       const doctorRows = doctors.map(d => ({
         name: d.name,
+        age: parseInt(d.age) || 0,
         email: d.email,
         phone: d.phone,
         specialization: d.specialization,
@@ -188,7 +190,8 @@ const HospitalRequest = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><Label>Doctor Name *</Label><Input value={currentDoctor.name} onChange={e => setCurrentDoctor({ ...currentDoctor, name: e.target.value })} /></div>
-                <div><Label>Email</Label><Input type="email" value={currentDoctor.email} onChange={e => setCurrentDoctor({ ...currentDoctor, email: e.target.value })} /></div>
+                <div><Label>Age</Label><Input type="number" value={currentDoctor.age} onChange={e => setCurrentDoctor({ ...currentDoctor, age: e.target.value })} placeholder="e.g. 35" /></div>
+                <div><Label>Email (Gmail)</Label><Input type="email" value={currentDoctor.email} onChange={e => setCurrentDoctor({ ...currentDoctor, email: e.target.value })} placeholder="doctor@gmail.com" /></div>
                 <div><Label>Phone Number</Label><Input value={currentDoctor.phone} onChange={e => setCurrentDoctor({ ...currentDoctor, phone: e.target.value })} /></div>
                 <div><Label>Specialization *</Label>
                   <Select value={currentDoctor.specialization} onValueChange={v => setCurrentDoctor({ ...currentDoctor, specialization: v })}>
@@ -215,7 +218,7 @@ const HospitalRequest = () => {
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
                         <p className="font-medium text-sm">Dr. {d.name}</p>
-                        <p className="text-xs text-muted-foreground">{d.specialization} {d.education && `· ${d.education}`}</p>
+                        <p className="text-xs text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`}</p>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => removeDoctor(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
@@ -260,7 +263,7 @@ const HospitalRequest = () => {
                 {doctors.map((d, i) => (
                   <div key={i} className="p-3 rounded-lg bg-muted/50 text-sm">
                     <p className="font-medium">Dr. {d.name}</p>
-                    <p className="text-muted-foreground">{d.specialization} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
+                    <p className="text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
                     {(d.email || d.phone) && <p className="text-muted-foreground">{d.email} {d.phone && `· ${d.phone}`}</p>}
                   </div>
                 ))}

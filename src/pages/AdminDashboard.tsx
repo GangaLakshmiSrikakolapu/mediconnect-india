@@ -158,7 +158,7 @@ const AdminDashboard = () => {
                   <div className="space-y-2">
                     {hospitalDoctors.map((d: any) => (
                       <div key={d.id} className="p-3 rounded-lg bg-muted/50 text-sm">
-                        <p className="font-medium">Dr. {d.name}</p>
+                        <p className="font-medium">Dr. {d.name} {d.age ? `(Age: ${d.age})` : ''}</p>
                         <p className="text-muted-foreground">{d.specialization} · {d.experience} yrs exp</p>
                         {d.education_details && (
                           <p className="text-muted-foreground flex items-center gap-1"><GraduationCap className="h-3 w-3" />{d.education_details}</p>
