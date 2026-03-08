@@ -33,39 +33,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const detectRole = useCallback(async (userId: string): Promise<AppRole> => {
-    try {
-      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
-      if (roles && roles.length > 0) {
-        if (roles.some(r => r.role === 'admin')) return 'superAdmin';
-        if (roles.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
-        return 'patient';
-      }
-    } catch (e) {
-      console.error('Role detection error:', e);
+    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
+    if (roles?.length) {
+      if (roles.some(r => r.role === 'admin')) return 'superAdmin';
+      if (roles.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
     }
-    // Fallback to localStorage hint (set during hospital registration)
+    // Check localStorage fallback
     const stored = localStorage.getItem('mediconnect_role');
     if (stored === 'hospitalAdmin' || stored === 'superAdmin') return stored as AppRole;
     return 'patient';
   }, []);
-
-  const loadUser = useCallback(async (session: Session | null) => {
-    if (!session?.user) {
-      setState({ user: null, session: null, role: null, loading: false, profile: null });
-      localStorage.removeItem('mediconnect_role');
-      return;
-    }
-    try {
-      const role = await detectRole(session.user.id);
-      const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
-      setState({ user: session.user, session, role, loading: false, profile });
-      localStorage.setItem('mediconnect_role', role);
-      localStorage.setItem('mediconnect_last_role', role);
-    } catch (e) {
-      console.error('Auth load error:', e);
-      setState({ user: session.user, session, role: 'patient', loading: false, profile: null });
-    }
-  }, [detectRole]);
 
   const refreshRole = useCallback(async () => {
     if (!state.user) return;
@@ -75,34 +52,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.user, detectRole]);
 
   useEffect(() => {
-    let initialLoaded = false;
-
-    // Set up listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (initialLoaded) {
-        // Only handle subsequent auth changes (login/logout), not the initial one
-        await loadUser(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const role = await detectRole(session.user.id);
+        const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
+        setState({ user: session.user, session, role, loading: false, profile });
+        localStorage.setItem('mediconnect_role', role);
+        localStorage.setItem('mediconnect_last_role', role);
+      } else {
+        setState({ user: null, session: null, role: null, loading: false, profile: null });
+        localStorage.removeItem('mediconnect_role');
       }
     });
 
-    // Then get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      initialLoaded = true;
-      await loadUser(session);
-    }).catch(() => {
-      initialLoaded = true;
-      setState(s => ({ ...s, loading: false }));
+      if (session?.user) {
+        const role = await detectRole(session.user.id);
+        const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
+        setState({ user: session.user, session, role, loading: false, profile });
+      } else {
+        setState(s => ({ ...s, loading: false }));
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [loadUser]);
+  }, [detectRole]);
 
   const signOut = async () => {
-    localStorage.removeItem('mediconnect_role');
-    localStorage.removeItem('mediconnect_last_role');
-    sessionStorage.removeItem('mediconnect_hospital_admin');
     await supabase.auth.signOut();
-    setState({ user: null, session: null, role: null, loading: false, profile: null });
+    localStorage.removeItem('mediconnect_role');
+    sessionStorage.removeItem('mediconnect_hospital_admin');
   };
 
   return (

@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Heart, Menu, X, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,14 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 
 const Header = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, role, signOut } = useAuth();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/', { replace: true });
-  };
 
   // Hide header on auth, dashboard, and admin pages
   if (location.pathname === '/auth' || location.pathname === '/auth/reset-password') return null;
@@ -57,7 +51,7 @@ const Header = () => {
                   <User className="h-4 w-4" />Dashboard
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-2" onClick={handleSignOut}>
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-2" onClick={signOut}>
                 <LogOut className="h-4 w-4" />Sign Out
               </Button>
             </>
@@ -84,7 +78,7 @@ const Header = () => {
             </Link>
           ))}
           {user ? (
-            <button onClick={() => { handleSignOut(); setMobileOpen(false); }}
+            <button onClick={() => { signOut(); setMobileOpen(false); }}
               className="block w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted">
               Sign Out
             </button>
