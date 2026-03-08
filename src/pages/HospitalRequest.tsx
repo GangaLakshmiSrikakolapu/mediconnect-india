@@ -71,11 +71,8 @@ const HospitalRequest = () => {
     setDoctorErrors(null);
     setDoctors(prev => [...prev, { ...currentDoctor }]);
     toast({ title: `Dr. ${currentDoctor.doctor_name} added successfully` });
-    // Always clear form after adding to prevent duplicates
+    // Always clear form after adding
     setCurrentDoctor({ ...emptyDoctor });
-    if (clearAfter) {
-      setCurrentDoctor({ ...emptyDoctor });
-    }
     return true;
   };
 
