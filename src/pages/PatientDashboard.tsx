@@ -34,18 +34,6 @@ const getGreeting = () => {
   return 'Good Evening';
 };
 
-const HEALTH_TIPS = [
-  { category: 'Nutrition', title: 'Top 10 Foods for Heart Health', preview: 'Discover nutrient-rich foods that support cardiovascular wellness and help prevent disease.' },
-  { category: 'Fitness', title: '15-Minute Morning Routine', preview: 'Quick exercises to boost energy and mental clarity throughout the day.' },
-  { category: 'Mental Health', title: 'Managing Stress at Work', preview: 'Practical tips for maintaining mental well-being during busy work schedules.' },
-];
-
-const AI_RECOMMENDATIONS = [
-  { icon: '🩺', name: 'Annual Health Checkup', reason: 'Preventive Care', desc: 'Recommended yearly screening for early detection' },
-  { icon: '🩸', name: 'Diabetes Screening', reason: 'Based on Profile', desc: 'HbA1c and fasting glucose test' },
-  { icon: '👁️', name: 'Eye Checkup', reason: 'Age-appropriate', desc: 'Comprehensive vision and retina exam' },
-];
-
 const PatientDashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
