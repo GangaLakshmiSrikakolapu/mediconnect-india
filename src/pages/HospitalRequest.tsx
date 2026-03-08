@@ -114,10 +114,6 @@ const HospitalRequest = () => {
       });
       if (error || data?.error) throw new Error(data?.error || 'Failed');
 
-      // 4. Store role
-      localStorage.setItem('mediconnect_role', 'hospitalAdmin');
-      localStorage.setItem('mediconnect_last_role', 'hospitalAdmin');
-      
       setStep('done');
     } catch (err: any) {
       toast({ title: err.message || 'Registration failed', variant: 'destructive' });

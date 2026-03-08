@@ -84,7 +84,7 @@ const Header = () => {
             </Link>
           ))}
           {user ? (
-            <button onClick={() => { signOut(); setMobileOpen(false); }}
+            <button onClick={() => { handleSignOut(); setMobileOpen(false); }}
               className="block w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted">
               Sign Out
             </button>

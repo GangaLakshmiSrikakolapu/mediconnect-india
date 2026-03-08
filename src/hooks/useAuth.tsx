@@ -33,14 +33,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const detectRole = useCallback(async (userId: string): Promise<AppRole> => {
+    // Try querying user_roles first
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
     if (roles?.length) {
       if (roles.some(r => r.role === 'admin')) return 'superAdmin';
       if (roles.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
+      return 'patient';
     }
-    // Check localStorage fallback
+    // If no roles found yet (race condition with edge function), check localStorage hint
     const stored = localStorage.getItem('mediconnect_role');
-    if (stored === 'hospitalAdmin' || stored === 'superAdmin') return stored as AppRole;
+    if (stored === 'hospitalAdmin' || stored === 'superAdmin') {
+      // Retry once after a short delay to let the edge function complete
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { data: retryRoles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
+      if (retryRoles?.length) {
+        if (retryRoles.some(r => r.role === 'admin')) return 'superAdmin';
+        if (retryRoles.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
+      }
+      // Trust localStorage hint if edge function set the role
+      return stored as AppRole;
+    }
     return 'patient';
   }, []);
 
