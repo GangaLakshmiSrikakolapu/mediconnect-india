@@ -131,6 +131,45 @@ export type Database = {
           },
         ]
       }
+      doctors_request: {
+        Row: {
+          age: string | null
+          created_at: string
+          doctor_name: string
+          education: string | null
+          email: string | null
+          experience: string | null
+          hospital_id: string
+          id: string
+          phone: string | null
+          specialization: string
+        }
+        Insert: {
+          age?: string | null
+          created_at?: string
+          doctor_name: string
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          hospital_id: string
+          id?: string
+          phone?: string | null
+          specialization: string
+        }
+        Update: {
+          age?: string | null
+          created_at?: string
+          doctor_name?: string
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          hospital_id?: string
+          id?: string
+          phone?: string | null
+          specialization?: string
+        }
+        Relationships: []
+      }
       hospitals: {
         Row: {
           address: string
