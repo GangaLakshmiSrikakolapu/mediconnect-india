@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const role = await detectRole(session.user.id);
+        const role = await detectRole(session.user.id, session.user.email);
         const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
         setState({ user: session.user, session, role, loading: false, profile });
         localStorage.setItem('mediconnect_role', role);
@@ -81,12 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setState({ user: null, session: null, role: null, loading: false, profile: null });
         localStorage.removeItem('mediconnect_role');
+        localStorage.removeItem('mediconnect_last_role');
       }
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const role = await detectRole(session.user.id);
+        const role = await detectRole(session.user.id, session.user.email);
         const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
         setState({ user: session.user, session, role, loading: false, profile });
       } else {
