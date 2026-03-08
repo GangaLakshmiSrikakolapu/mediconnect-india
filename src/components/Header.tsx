@@ -1,27 +1,25 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useLanguage, languageNames, Language } from '@/contexts/LanguageContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Heart, Menu, X } from 'lucide-react';
+import { Heart, Menu, X, User, Stethoscope, Building2, Shield, Search, Bell } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 const Header = () => {
-  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
-    { path: '/', label: t.nav.home },
-    { path: '/find-hospital', label: t.findHospital.title },
-    { path: '/hospitals', label: t.nav.hospitals },
-    { path: '/insurance', label: t.nav.info },
-    { path: '/doctor/login', label: 'Doctor Portal' },
+    { path: '/', label: 'Home' },
+    { path: '/find-hospital', label: 'Find Hospital' },
+    { path: '/hospitals', label: 'For Hospitals' },
+    { path: '/insurance', label: 'Insurance' },
+    { path: '/patient/dashboard', label: 'My Dashboard', icon: User },
   ];
 
   const isActive = (path: string) => location.pathname === path;
+  const isLanding = location.pathname === '/';
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+    <header className={`sticky top-0 z-50 border-b transition-all ${isLanding ? 'bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80' : 'bg-card shadow-sm'}`}>
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Heart className="h-7 w-7 text-primary fill-primary" />
@@ -29,7 +27,7 @@ const Header = () => {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.path}
@@ -45,22 +43,24 @@ const Header = () => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
-            <SelectTrigger className="w-[130px] h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.entries(languageNames) as [Language, string][]).map(([code, name]) => (
-                <SelectItem key={code} value={code}>{name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <Link to="/doctor/login">
+            <Button variant="outline" size="sm" className="hidden md:inline-flex gap-2">
+              <Stethoscope className="h-4 w-4" />
+              Doctor Portal
+            </Button>
+          </Link>
+          <Link to="/admin/login">
+            <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-2">
+              <Shield className="h-4 w-4" />
+              Admin
+            </Button>
+          </Link>
 
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="lg:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -70,7 +70,7 @@ const Header = () => {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav className="md:hidden border-t bg-card p-4 space-y-1 animate-fade-in">
+        <nav className="lg:hidden border-t bg-card p-4 space-y-1 animate-fade-in">
           {navLinks.map((link) => (
             <Link
               key={link.path}
@@ -85,6 +85,14 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
+          <Link to="/doctor/login" onClick={() => setMobileOpen(false)}
+            className="block px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted">
+            Doctor Portal
+          </Link>
+          <Link to="/admin/login" onClick={() => setMobileOpen(false)}
+            className="block px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted">
+            Admin Portal
+          </Link>
         </nav>
       )}
     </header>
