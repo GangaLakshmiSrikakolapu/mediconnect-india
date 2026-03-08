@@ -10,7 +10,9 @@ const Header = () => {
   const { user, role, signOut } = useAuth();
 
   // Hide header on auth page
+  // Hide header on auth pages and patient dashboard (has its own layout)
   if (location.pathname === '/auth' || location.pathname === '/auth/reset-password') return null;
+  if (location.pathname.startsWith('/patient/')) return null;
 
   const navLinks = [
     { path: '/', label: 'Home' },
