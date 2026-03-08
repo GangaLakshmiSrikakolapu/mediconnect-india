@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -23,7 +22,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const ROLE_ROUTES: Record<AppRole, string> = {
   patient: '/patient/dashboard',
   hospitalAdmin: '/hospital/dashboard',
-  superAdmin: '/admin/dashboard',
+  superAdmin: '/superadmin/dashboard',
 };
 
 export const getRedirectForRole = (role: AppRole) => ROLE_ROUTES[role] || '/';
@@ -34,14 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const detectRole = useCallback(async (userId: string): Promise<AppRole> => {
-    // Check user_roles table first
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
     if (roles?.length) {
       if (roles.some(r => r.role === 'admin')) return 'superAdmin';
+      if (roles.some(r => (r.role as string) === 'hospital_admin')) return 'hospitalAdmin';
     }
-    // Check if stored role in localStorage
+    // Check localStorage fallback
     const stored = localStorage.getItem('mediconnect_role');
-    if (stored && (stored === 'patient' || stored === 'hospitalAdmin' || stored === 'superAdmin')) return stored as AppRole;
+    if (stored === 'hospitalAdmin' || stored === 'superAdmin') return stored as AppRole;
     return 'patient';
   }, []);
 

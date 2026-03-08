@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, Menu, X, User, Stethoscope, Building2, Shield, LogOut } from 'lucide-react';
+import { Heart, Menu, X, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,11 +9,12 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, role, signOut } = useAuth();
 
-  // Hide header on auth page
-  // Hide header on auth pages and patient dashboard (has its own layout)
+  // Hide header on auth, dashboard, and admin pages
   if (location.pathname === '/auth' || location.pathname === '/auth/reset-password') return null;
   if (location.pathname.startsWith('/patient/')) return null;
   if (location.pathname.startsWith('/hospital/')) return null;
+  if (location.pathname.startsWith('/superadmin/')) return null;
+  if (location.pathname.startsWith('/admin/')) return null;
 
   const navLinks = [
     { path: '/', label: 'Home' },
@@ -45,22 +46,19 @@ const Header = () => {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link to={role === 'patient' ? '/patient/dashboard' : role === 'superAdmin' ? '/admin/dashboard' : role === 'hospitalAdmin' ? '/hospital/dashboard' : '/'}>
+              <Link to={role === 'patient' ? '/patient/dashboard' : role === 'superAdmin' ? '/superadmin/dashboard' : role === 'hospitalAdmin' ? '/hospital/dashboard' : '/'}>
                 <Button variant="outline" size="sm" className="hidden md:inline-flex gap-2">
-                  <User className="h-4 w-4" />
-                  Dashboard
+                  <User className="h-4 w-4" />Dashboard
                 </Button>
               </Link>
               <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-2" onClick={signOut}>
-                <LogOut className="h-4 w-4" />
-                Sign Out
+                <LogOut className="h-4 w-4" />Sign Out
               </Button>
             </>
           ) : (
             <Link to="/auth">
               <Button size="sm" className="hidden md:inline-flex gap-2 rounded-full">
-                <User className="h-4 w-4" />
-                Sign In
+                <User className="h-4 w-4" />Sign In
               </Button>
             </Link>
           )}
