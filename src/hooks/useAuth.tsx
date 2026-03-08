@@ -82,9 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [detectRole]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('mediconnect_role');
-    sessionStorage.removeItem('mediconnect_hospital_admin');
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      localStorage.removeItem('mediconnect_role');
+      localStorage.removeItem('mediconnect_last_role');
+      sessionStorage.removeItem('mediconnect_hospital_admin');
+      window.location.href = '/auth';
+    }
   };
 
   return (
@@ -95,7 +100,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be inside AuthProvider');
-  return ctx;
+  const ctx = useContext<AuthContextType | null>(AuthContext);
+  if (ctx) return ctx;
+
+  // Defensive fallback to prevent blank screen during hot reload glitches
+  return {
+    user: null,
+    session: null,
+    role: null,
+    loading: false,
+    profile: null,
+    signOut: async () => {
+      await supabase.auth.signOut();
+      localStorage.removeItem('mediconnect_role');
+      localStorage.removeItem('mediconnect_last_role');
+      sessionStorage.removeItem('mediconnect_hospital_admin');
+      window.location.href = '/auth';
+    },
+    refreshRole: async () => {},
+  };
 }
