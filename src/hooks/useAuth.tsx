@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
-export type AppRole = 'patient' | 'hospitalAdmin' | 'doctor' | 'superAdmin' | 'insurancePartner';
+export type AppRole = 'patient' | 'hospitalAdmin' | 'superAdmin';
 
 interface AuthState {
   user: User | null;
@@ -22,10 +22,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const ROLE_ROUTES: Record<AppRole, string> = {
   patient: '/patient/dashboard',
-  hospitalAdmin: '/hospital-admin/dashboard',
-  doctor: '/doctor/dashboard',
+  hospitalAdmin: '/hospital/dashboard',
   superAdmin: '/admin/dashboard',
-  insurancePartner: '/insurance',
 };
 
 export const getRedirectForRole = (role: AppRole) => ROLE_ROUTES[role] || '/';
@@ -43,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     // Check if stored role in localStorage
     const stored = localStorage.getItem('mediconnect_role');
-    if (stored) return stored as AppRole;
+    if (stored && (stored === 'patient' || stored === 'hospitalAdmin' || stored === 'superAdmin')) return stored as AppRole;
     return 'patient';
   }, []);
 
@@ -55,7 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.user, detectRole]);
 
   useEffect(() => {
-    // Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         const role = await detectRole(session.user.id);
@@ -69,7 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Then get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const role = await detectRole(session.user.id);
@@ -86,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('mediconnect_role');
-    sessionStorage.removeItem('mediconnect_doctor');
+    sessionStorage.removeItem('mediconnect_hospital_admin');
   };
 
   return (
