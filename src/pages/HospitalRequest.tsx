@@ -61,7 +61,7 @@ const HospitalRequest = () => {
     setStep('doctors');
   };
 
-  const addDoctor = (clearAfter: boolean = false) => {
+  const addDoctor = (clearAfter: boolean = true) => {
     const error = validateDoctor(currentDoctor);
     if (error) {
       setDoctorErrors(error);
@@ -71,6 +71,8 @@ const HospitalRequest = () => {
     setDoctorErrors(null);
     setDoctors(prev => [...prev, { ...currentDoctor }]);
     toast({ title: `Dr. ${currentDoctor.doctor_name} added successfully` });
+    // Always clear form after adding to prevent duplicates
+    setCurrentDoctor({ ...emptyDoctor });
     if (clearAfter) {
       setCurrentDoctor({ ...emptyDoctor });
     }
