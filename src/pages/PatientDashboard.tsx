@@ -64,6 +64,39 @@ const PatientDashboard = () => {
     },
   });
 
+  const { data: healthTips } = useQuery({
+    queryKey: ['health-tips'],
+    queryFn: async () => {
+      const { data } = await supabase.from('health_tips').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(3);
+      return data || [];
+    },
+  });
+
+  const { data: hospitalReviews } = useQuery({
+    queryKey: ['hospital-reviews-count'],
+    queryFn: async () => {
+      const { data } = await supabase.from('reviews').select('hospital_id, rating');
+      return data || [];
+    },
+  });
+
+  // Realtime for appointments
+  useEffect(() => {
+    if (!user?.email) return;
+    const channel = supabase
+      .channel('patient-appts-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, (payload) => {
+        const row = payload.new as any;
+        if (row?.patient_email === user.email) {
+          queryClient.invalidateQueries({ queryKey: ['patient-appointments'] });
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.email]);
+
+  const queryClient = useQueryClient();
+
   if (!user || authLoading) return null;
 
   const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Patient';
