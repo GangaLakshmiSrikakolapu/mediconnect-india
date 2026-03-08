@@ -45,6 +45,21 @@ const PatientFindHospitals = () => {
     },
   });
 
+  const { data: allReviews } = useQuery({
+    queryKey: ['all-hospital-reviews'],
+    queryFn: async () => {
+      const { data } = await supabase.from('reviews').select('hospital_id, rating');
+      return data || [];
+    },
+  });
+
+  const getHospitalRating = (hId: string) => {
+    const hRevs = (allReviews || []).filter((r: any) => r.hospital_id === hId);
+    if (hRevs.length === 0) return { avg: 'New', count: 0 };
+    const avg = (hRevs.reduce((s: number, r: any) => s + r.rating, 0) / hRevs.length).toFixed(1);
+    return { avg, count: hRevs.length };
+  };
+
   const filtered = (hospitals || []).filter((h: any) => {
     if (selectedSpecs.length > 0) {
       const specs = h.specializations || [];
