@@ -38,6 +38,15 @@ const HospitalAnalytics = () => {
     },
   });
 
+  const { data: reviews } = useQuery({
+    queryKey: ['hosp-analytics-reviews', hospital?.id],
+    enabled: !!hospital?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from('reviews').select('rating').eq('hospital_id', hospital!.id);
+      return data || [];
+    },
+  });
+
   if (!hospital) return null;
 
   const allAppts = appointments || [];
