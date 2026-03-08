@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SuperAdminLayout from '@/components/SuperAdminLayout';
 import { toast } from '@/hooks/use-toast';
-import { Save, Settings, Shield, Percent, Zap, Lock } from 'lucide-react';
+import { Save, Percent, Zap, Lock, Shield } from 'lucide-react';
 
 const SuperAdminSettings = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -84,11 +84,16 @@ const SuperAdminSettings = () => {
               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Lock className="h-4 w-4" />Security</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 rounded-xl bg-muted/30">
-                  <p className="text-sm font-medium">Admin Access Key</p>
-                  <p className="text-xs text-muted-foreground mb-2">The private key used for Super Admin authentication.</p>
-                  <Input type="password" defaultValue="1234" className="max-w-xs" />
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="h-4 w-4 text-success" />
+                    <p className="text-sm font-medium">Authentication</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Super Admin access is secured via role-based JWT authentication. No static keys are used.</p>
                 </div>
-                <Button className="rounded-xl" onClick={handleSave}><Save className="h-4 w-4 mr-1" />Save</Button>
+                <div className="p-4 rounded-xl bg-muted/30">
+                  <p className="text-sm font-medium">Session Timeout</p>
+                  <p className="text-xs text-muted-foreground">Sessions expire after 1 hour of inactivity. Users must re-authenticate.</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

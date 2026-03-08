@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import PatientLayout from '@/components/PatientLayout';
 import {
@@ -34,21 +34,10 @@ const getGreeting = () => {
   return 'Good Evening';
 };
 
-const HEALTH_TIPS = [
-  { category: 'Nutrition', title: 'Top 10 Foods for Heart Health', preview: 'Discover nutrient-rich foods that support cardiovascular wellness and help prevent disease.' },
-  { category: 'Fitness', title: '15-Minute Morning Routine', preview: 'Quick exercises to boost energy and mental clarity throughout the day.' },
-  { category: 'Mental Health', title: 'Managing Stress at Work', preview: 'Practical tips for maintaining mental well-being during busy work schedules.' },
-];
-
-const AI_RECOMMENDATIONS = [
-  { icon: '🩺', name: 'Annual Health Checkup', reason: 'Preventive Care', desc: 'Recommended yearly screening for early detection' },
-  { icon: '🩸', name: 'Diabetes Screening', reason: 'Based on Profile', desc: 'HbA1c and fasting glucose test' },
-  { icon: '👁️', name: 'Eye Checkup', reason: 'Age-appropriate', desc: 'Comprehensive vision and retina exam' },
-];
-
 const PatientDashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -75,6 +64,44 @@ const PatientDashboard = () => {
       return data || [];
     },
   });
+
+  const { data: healthTips } = useQuery({
+    queryKey: ['health-tips'],
+    queryFn: async () => {
+      const { data } = await supabase.from('health_tips').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(3);
+      return data || [];
+    },
+  });
+
+  const { data: hospitalReviews } = useQuery({
+    queryKey: ['hospital-reviews-count'],
+    queryFn: async () => {
+      const { data } = await supabase.from('reviews').select('hospital_id, rating');
+      return data || [];
+    },
+  });
+
+  // Realtime for appointments
+  useEffect(() => {
+    if (!user?.email) return;
+    const channel = supabase
+      .channel('patient-appts-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, (payload) => {
+        const row = payload.new as any;
+        if (row?.patient_email === user.email) {
+          queryClient.invalidateQueries({ queryKey: ['patient-appointments'] });
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.email]);
+
+  const getHospitalRating = (hId: string) => {
+    const hRevs = (hospitalReviews || []).filter((r: any) => r.hospital_id === hId);
+    if (hRevs.length === 0) return { avg: 'New', count: 0 };
+    const avg = (hRevs.reduce((s: number, r: any) => s + r.rating, 0) / hRevs.length).toFixed(1);
+    return { avg, count: hRevs.length };
+  };
 
   if (!user || authLoading) return null;
 
@@ -206,29 +233,29 @@ const PatientDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* AI Recommendations */}
+        {/* Quick Actions */}
         <Card className="border-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(214, 67%, 37%) 0%, hsl(174, 62%, 29%) 100%)' }}>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="h-5 w-5 text-white" />
-              <h3 className="font-heading font-bold text-white text-lg">AI Health Recommendations</h3>
+              <h3 className="font-heading font-bold text-white text-lg">Quick Actions</h3>
             </div>
-            <p className="text-white/60 text-sm mb-5">Personalised based on your health profile</p>
+            <p className="text-white/60 text-sm mb-5">What would you like to do today?</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {AI_RECOMMENDATIONS.map(rec => (
-                <Card key={rec.name} className="border-0 bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors">
-                  <CardContent className="p-4">
-                    <span className="text-2xl">{rec.icon}</span>
-                    <p className="font-semibold text-white text-sm mt-2">{rec.name}</p>
-                    <Badge className="bg-white/20 text-white/90 border-0 text-[10px] mt-1">{rec.reason}</Badge>
-                    <p className="text-white/50 text-xs mt-2">{rec.desc}</p>
-                    <Link to="/patient/find-hospitals">
-                      <Button size="sm" className="mt-3 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs h-8 w-full">
-                        Book Now
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+              {[
+                { icon: '🏥', name: 'Find a Hospital', desc: 'Search nearby hospitals by specialty', link: '/patient/find-hospitals' },
+                { icon: '📋', name: 'Medical Records', desc: 'View and manage your health records', link: '/patient/records' },
+                { icon: '🛡️', name: 'Insurance Info', desc: 'Check your insurance coverage', link: '/patient/insurance' },
+              ].map(item => (
+                <Link key={item.name} to={item.link}>
+                  <Card className="border-0 bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors cursor-pointer">
+                    <CardContent className="p-4">
+                      <span className="text-2xl">{item.icon}</span>
+                      <p className="font-semibold text-white text-sm mt-2">{item.name}</p>
+                      <p className="text-white/50 text-xs mt-1">{item.desc}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -253,11 +280,13 @@ const PatientDashboard = () => {
                       <Building2 className="h-10 w-10 text-primary/30" />
                     </div>
                     <p className="font-semibold text-sm truncate">{h.name}</p>
+                    {(() => { const r = getHospitalRating(h.id); return (
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="h-3 w-3 text-warning fill-warning" />
-                      <span className="text-xs font-medium">4.5</span>
-                      <span className="text-xs text-muted-foreground ml-1">· {h.district}</span>
+                      <span className="text-xs font-medium">{r.avg}</span>
+                      <span className="text-xs text-muted-foreground ml-1">{r.count > 0 ? `· ${r.count} reviews` : ''} · {h.district}</span>
                     </div>
+                    ); })()}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {(h.specializations || []).slice(0, 2).map((s: string) => (
                         <Badge key={s} variant="secondary" className="text-[10px] px-1.5 py-0">{s}</Badge>
@@ -317,23 +346,25 @@ const PatientDashboard = () => {
         )}
 
         {/* Health Tips */}
-        <div>
-          <h3 className="font-heading font-bold text-lg mb-4">Health Tips</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {HEALTH_TIPS.map(tip => (
-              <Card key={tip.title} className="border-0 card-shadow hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="w-full h-28 rounded-xl bg-gradient-to-br from-muted to-secondary flex items-center justify-center mb-3">
-                    <span className="text-3xl opacity-30">{tip.category === 'Nutrition' ? '🥗' : tip.category === 'Fitness' ? '🏃' : '🧠'}</span>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] mb-2">{tip.category}</Badge>
-                  <p className="font-semibold text-sm">{tip.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tip.preview}</p>
-                </CardContent>
-              </Card>
-            ))}
+        {(healthTips || []).length > 0 && (
+          <div>
+            <h3 className="font-heading font-bold text-lg mb-4">Health Tips</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(healthTips || []).map((tip: any) => (
+                <Card key={tip.id} className="border-0 card-shadow hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="w-full h-28 rounded-xl bg-gradient-to-br from-muted to-secondary flex items-center justify-center mb-3">
+                      <span className="text-3xl opacity-30">{tip.category === 'Nutrition' ? '🥗' : tip.category === 'Fitness' ? '🏃' : '🧠'}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] mb-2">{tip.category}</Badge>
+                    <p className="font-semibold text-sm">{tip.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tip.content || ''}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="h-8" />
       </div>

@@ -45,6 +45,21 @@ const PatientFindHospitals = () => {
     },
   });
 
+  const { data: allReviews } = useQuery({
+    queryKey: ['all-hospital-reviews'],
+    queryFn: async () => {
+      const { data } = await supabase.from('reviews').select('hospital_id, rating');
+      return data || [];
+    },
+  });
+
+  const getHospitalRating = (hId: string) => {
+    const hRevs = (allReviews || []).filter((r: any) => r.hospital_id === hId);
+    if (hRevs.length === 0) return { avg: 'New', count: 0 };
+    const avg = (hRevs.reduce((s: number, r: any) => s + r.rating, 0) / hRevs.length).toFixed(1);
+    return { avg, count: hRevs.length };
+  };
+
   const filtered = (hospitals || []).filter((h: any) => {
     if (selectedSpecs.length > 0) {
       const specs = h.specializations || [];
@@ -196,11 +211,15 @@ const PatientFindHospitals = () => {
                     </div>
                     <h4 className="font-semibold text-sm truncate">{h.name}</h4>
                     <div className="flex items-center gap-2 mt-1">
+                    {(() => { const r = getHospitalRating(h.id); return (
+                    <>
                       <div className="flex items-center gap-0.5">
                         <Star className="h-3 w-3 text-warning fill-warning" />
-                        <span className="text-xs font-medium">4.5</span>
+                        <span className="text-xs font-medium">{r.avg}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">· 128 reviews</span>
+                      {r.count > 0 && <span className="text-xs text-muted-foreground">· {r.count} reviews</span>}
+                    </>
+                    ); })()}
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {(h.specializations || []).slice(0, 3).map((s: string) => (
