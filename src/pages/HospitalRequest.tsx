@@ -129,9 +129,9 @@ const HospitalRequest = () => {
           </div>
           <h2 className="font-heading text-2xl font-bold mb-2">Registration Successful!</h2>
           <p className="text-muted-foreground mb-2">Your hospital account has been created with {doctors.length} doctor(s).</p>
-          <p className="text-sm text-muted-foreground mb-6">Please check your email to verify your account. Once verified and approved by our admin team, you'll have full access to your hospital dashboard.</p>
+          <p className="text-sm text-muted-foreground mb-6">Your hospital is pending approval by our admin team. You can access your dashboard now.</p>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => navigate('/auth')} className="rounded-xl">Go to Login</Button>
+            <Button onClick={() => navigate('/hospital/dashboard')} className="rounded-xl">Go to Dashboard</Button>
             <Button variant="outline" onClick={() => navigate('/')} className="rounded-xl">Back to Home</Button>
           </div>
         </div>
