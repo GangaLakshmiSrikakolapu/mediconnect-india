@@ -15,6 +15,7 @@ const Header = () => {
     { path: '/find-hospital', label: t.findHospital.title },
     { path: '/hospitals', label: t.nav.hospitals },
     { path: '/insurance', label: t.nav.info },
+    { path: '/doctor/login', label: 'Doctor Portal' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
