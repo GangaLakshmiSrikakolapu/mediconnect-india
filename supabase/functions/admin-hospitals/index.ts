@@ -80,31 +80,38 @@ serve(async (req) => {
 
       // If approved, auto-create doctors and time slots
       if (status === "approved") {
-        // Fetch hospital details
         const { data: hospital } = await supabaseAdmin
           .from("hospitals")
           .select("*")
           .eq("id", hospitalId)
           .single();
 
-        if (hospital && hospital.specializations && hospital.specializations.length > 0) {
-          // Check if doctors already exist for this hospital
+        if (hospital) {
           const { data: existingDoctors } = await supabaseAdmin
             .from("doctors")
-            .select("specialization")
+            .select("specialization, name")
             .eq("hospital_id", hospitalId);
 
+          const existingNames = new Set((existingDoctors || []).map((d: any) => d.name));
           const existingSpecs = new Set((existingDoctors || []).map((d: any) => d.specialization));
 
-          // Create doctors for each specialization that doesn't have one yet
-          const newDoctors = hospital.specializations
-            .filter((spec: string) => !existingSpecs.has(spec))
+          const defaultDoctors = [
+            { name: "Arjun Kumar", specialization: "General Medicine", experience: 5 },
+            { name: "Priya Sharma", specialization: "General Medicine", experience: 7 },
+          ].filter(d => !existingNames.has(d.name));
+
+          const specDoctors = (hospital.specializations || [])
+            .filter((spec: string) => !existingSpecs.has(spec) && spec !== "General Medicine")
             .map((spec: string) => ({
               name: specializationDoctorNames[spec] || `Dr. ${spec} Specialist`,
               specialization: spec,
-              hospital_id: hospitalId,
-              experience: Math.floor(Math.random() * 15) + 3, // 3-17 years
+              experience: Math.floor(Math.random() * 15) + 3,
             }));
+
+          const newDoctors = [...defaultDoctors, ...specDoctors].map(d => ({
+            ...d,
+            hospital_id: hospitalId,
+          }));
 
           if (newDoctors.length > 0) {
             const { data: createdDoctors, error: doctorError } = await supabaseAdmin
@@ -115,14 +122,11 @@ serve(async (req) => {
             if (doctorError) {
               console.error("Error creating doctors:", doctorError);
             } else if (createdDoctors) {
-              // Create time slots for each new doctor
               const allSlots = createdDoctors.flatMap((doc: any) => generateSampleSlots(doc.id));
-              
               if (allSlots.length > 0) {
                 const { error: slotError } = await supabaseAdmin
                   .from("time_slots")
                   .insert(allSlots);
-
                 if (slotError) {
                   console.error("Error creating slots:", slotError);
                 }

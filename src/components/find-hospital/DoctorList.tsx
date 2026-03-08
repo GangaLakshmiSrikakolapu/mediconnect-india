@@ -30,7 +30,7 @@ const DoctorList = ({ hospitalId, healthProblem, onSelectDoctor, onBack }: { hos
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <span className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3.5 w-3.5" />{d.experience} {t.findHospital.years} {t.findHospital.experience}</span>
-            <Button size="sm" onClick={() => onSelectDoctor(d.id)}>{t.findHospital.bookSlot}</Button>
+            <Button size="sm" onClick={() => onSelectDoctor(d.id)}>{t.findHospital.bookAppointment}</Button>
           </CardContent>
         </Card>
       ))}
