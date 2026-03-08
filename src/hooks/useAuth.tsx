@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
     } finally {
       localStorage.removeItem('mediconnect_role');
       localStorage.removeItem('mediconnect_last_role');

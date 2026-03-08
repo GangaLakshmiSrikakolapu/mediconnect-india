@@ -110,28 +110,49 @@ const AuthPage = () => {
         } else if (roles?.some(r => (r.role as string) === 'hospital_admin')) {
           effectiveRole = 'hospitalAdmin';
         } else {
-          effectiveRole = 'patient';
+          // Fallback to linked hospital ownership
+          const { data: linkedHospital } = await supabase
+            .from('hospitals')
+            .select('id')
+            .eq('admin_user_id', userId)
+            .maybeSingle();
+
+          effectiveRole = linkedHospital ? 'hospitalAdmin' : 'patient';
         }
       }
 
       // Always hydrate hospital session data when actual role is hospital admin
       if (effectiveRole === 'hospitalAdmin') {
-        const { data: hospitals } = await supabase
-          .from('hospitals')
-          .select('id, name, district, state, email, status')
-          .eq('email', normalizedEmail)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        let hospital: any = null;
 
-        const hospital = hospitals?.[0];
+        if (userId) {
+          const { data: byOwner } = await supabase
+            .from('hospitals')
+            .select('id, name, district, state, email, status')
+            .eq('admin_user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          hospital = byOwner?.[0] ?? null;
+        }
+
+        if (!hospital && selectedRole === 'hospitalAdmin') {
+          const { data: byEmail } = await supabase
+            .from('hospitals')
+            .select('id, name, district, state, email, status')
+            .eq('email', normalizedEmail)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          hospital = byEmail?.[0] ?? null;
+        }
+
         if (!hospital) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           toast({ title: 'Hospital profile not found', description: 'Please register your hospital first.', variant: 'destructive' });
           return;
         }
 
         if (hospital.status === 'rejected') {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           toast({ title: 'Hospital registration rejected', description: 'Contact support@mediconnect.in for details.', variant: 'destructive' });
           return;
         }
