@@ -84,6 +84,7 @@ export type Database = {
       doctors: {
         Row: {
           created_at: string
+          education_details: string | null
           experience: number
           hospital_id: string
           id: string
@@ -92,6 +93,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          education_details?: string | null
           experience?: number
           hospital_id: string
           id?: string
@@ -100,6 +102,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          education_details?: string | null
           experience?: number
           hospital_id?: string
           id?: string
