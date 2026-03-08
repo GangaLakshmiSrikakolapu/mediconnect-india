@@ -56,36 +56,34 @@ const AuthPage = () => {
       toast({ title: 'Account temporarily locked. Try again in 15 minutes.', variant: 'destructive' });
       return;
     }
+
     setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
-      // For hospital admin, check hospital exists and store its data
+      // Precheck for hospital admin tab
       if (selectedRole === 'hospitalAdmin') {
         const { data: hospitals } = await supabase
           .from('hospitals')
           .select('id, name, district, state, email, status')
-          .eq('email', email.trim());
-        
+          .eq('email', normalizedEmail)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
         if (!hospitals || hospitals.length === 0) {
           toast({ title: 'No hospital found with this email', description: 'Register your hospital first.', variant: 'destructive' });
           setLoading(false);
           return;
         }
-        
-        const hospital = hospitals[0];
-        if (hospital.status === 'rejected') {
+
+        if (hospitals[0].status === 'rejected') {
           toast({ title: 'Hospital registration rejected', description: 'Contact support@mediconnect.in for details.', variant: 'destructive' });
           setLoading(false);
           return;
         }
-
-        // Store hospital data for dashboard (pending hospitals can still login with banner)
-        sessionStorage.setItem('mediconnect_hospital_admin', JSON.stringify({
-          id: hospital.id, name: hospital.name, email: hospital.email,
-          district: hospital.district, state: hospital.state, status: hospital.status,
-        }));
       }
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) {
         setFailedAttempts(p => p + 1);
         if (error.message.includes('Invalid login')) {
@@ -95,11 +93,64 @@ const AuthPage = () => {
         }
         return;
       }
-      localStorage.setItem('mediconnect_role', selectedRole);
-      localStorage.setItem('mediconnect_last_role', selectedRole);
+
+      // Resolve real role from backend so wrong tab selection never routes incorrectly
+      let effectiveRole: AppRole = selectedRole;
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+
+      if (userId) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+
+        if (roles?.some(r => r.role === 'admin')) {
+          effectiveRole = 'superAdmin';
+        } else if (roles?.some(r => (r.role as string) === 'hospital_admin')) {
+          effectiveRole = 'hospitalAdmin';
+        } else {
+          effectiveRole = 'patient';
+        }
+      }
+
+      // Always hydrate hospital session data when actual role is hospital admin
+      if (effectiveRole === 'hospitalAdmin') {
+        const { data: hospitals } = await supabase
+          .from('hospitals')
+          .select('id, name, district, state, email, status')
+          .eq('email', normalizedEmail)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const hospital = hospitals?.[0];
+        if (!hospital) {
+          await supabase.auth.signOut();
+          toast({ title: 'Hospital profile not found', description: 'Please register your hospital first.', variant: 'destructive' });
+          return;
+        }
+
+        if (hospital.status === 'rejected') {
+          await supabase.auth.signOut();
+          toast({ title: 'Hospital registration rejected', description: 'Contact support@mediconnect.in for details.', variant: 'destructive' });
+          return;
+        }
+
+        sessionStorage.setItem('mediconnect_hospital_admin', JSON.stringify({
+          id: hospital.id,
+          name: hospital.name,
+          email: hospital.email,
+          district: hospital.district,
+          state: hospital.state,
+          status: hospital.status,
+        }));
+      }
+
+      localStorage.setItem('mediconnect_role', effectiveRole);
+      localStorage.setItem('mediconnect_last_role', effectiveRole);
       setFailedAttempts(0);
       toast({ title: 'Welcome back!' });
-      navigate(getRedirectForRole(selectedRole));
+      navigate(getRedirectForRole(effectiveRole));
     } catch (err: any) {
       toast({ title: err.message || 'Login failed', variant: 'destructive' });
     } finally {

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 import {
   BarChart3, Calendar, Users, Building2, UserCheck, FileText, Star,
   HardHat, CreditCard, Settings, Megaphone, Menu, Bell, User,
@@ -31,15 +32,15 @@ interface HospitalAdminLayoutProps {
 
 const HospitalAdminLayout = ({ children, hospital, pendingCount = 0 }: HospitalAdminLayoutProps) => {
   const location = useLocation();
+  const { signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const hospitalName = hospital?.name || 'Hospital';
   const currentPage = NAV_ITEMS.find(i => location.pathname === i.path || (i.path !== '/hospital/dashboard' && location.pathname.startsWith(i.path)))?.label || 'Dashboard';
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('mediconnect_hospital_admin');
-    window.location.href = '/auth';
+  const handleLogout = async () => {
+    await signOut();
   };
 
   return (

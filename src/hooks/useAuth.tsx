@@ -17,12 +17,10 @@ interface AuthContextType extends AuthState {
   refreshRole: () => Promise<void>;
 }
 
-// Use globalThis to survive HMR reloads
+// Keep context instance stable across HMR reloads
 const AUTH_CONTEXT_KEY = '__mediconnect_auth_context__';
-if (!(globalThis as any)[AUTH_CONTEXT_KEY]) {
-  (globalThis as any)[AUTH_CONTEXT_KEY] = createContext<AuthContextType | null>(null);
-}
-const AuthContext = (globalThis as any)[AUTH_CONTEXT_KEY] as React.Context<AuthContextType | null>;
+const AuthContext = ((globalThis as any)[AUTH_CONTEXT_KEY] ??
+  ((globalThis as any)[AUTH_CONTEXT_KEY] = createContext<AuthContextType | null>(null))) as ReturnType<typeof createContext<AuthContextType | null>>;
 
 const ROLE_ROUTES: Record<AppRole, string> = {
   patient: '/patient/dashboard',
@@ -84,9 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [detectRole]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('mediconnect_role');
-    sessionStorage.removeItem('mediconnect_hospital_admin');
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      localStorage.removeItem('mediconnect_role');
+      localStorage.removeItem('mediconnect_last_role');
+      sessionStorage.removeItem('mediconnect_hospital_admin');
+      window.location.href = '/auth';
+    }
   };
 
   return (
@@ -97,7 +100,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be inside AuthProvider');
-  return ctx;
+  const ctx = useContext<AuthContextType | null>(AuthContext);
+  if (ctx) return ctx;
+
+  // Defensive fallback to prevent blank screen during hot reload glitches
+  return {
+    user: null,
+    session: null,
+    role: null,
+    loading: false,
+    profile: null,
+    signOut: async () => {
+      await supabase.auth.signOut();
+      localStorage.removeItem('mediconnect_role');
+      localStorage.removeItem('mediconnect_last_role');
+      sessionStorage.removeItem('mediconnect_hospital_admin');
+      window.location.href = '/auth';
+    },
+    refreshRole: async () => {},
+  };
 }

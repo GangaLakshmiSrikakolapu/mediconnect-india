@@ -70,9 +70,11 @@ const HospitalRequest = () => {
     if (doctors.length === 0) { toast({ title: 'Add at least one doctor', variant: 'destructive' }); return; }
     setLoading(true);
     try {
+      const normalizedEmail = accountEmail.trim().toLowerCase();
+
       // 1. Create Supabase auth account
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: accountEmail,
+        email: normalizedEmail,
         password: accountPassword,
         options: {
           data: { full_name: form.name + ' Admin', role: 'hospitalAdmin' },
@@ -97,7 +99,7 @@ const HospitalRequest = () => {
       // 3. Submit hospital request (edge function assigns hospital_admin role)
       const { data, error } = await supabase.functions.invoke('hospital-request', {
         body: {
-          hospital_name: form.name, email: accountEmail, phone: form.phone,
+          hospital_name: form.name, email: normalizedEmail, phone: form.phone,
           state: form.state, district: form.district, address: form.address,
           specializations: specs, upi_qr_url: qrUrl,
           admin_user_id: userId,

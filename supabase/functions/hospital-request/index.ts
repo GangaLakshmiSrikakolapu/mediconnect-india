@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     console.log("Creating hospital request:", hospital_name);
     const { data: hospital, error: hospError } = await supabaseAdmin.from("hospitals").insert({
       name: hospital_name.trim(),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       phone: phone.trim(),
       state, district,
       address: address.trim(),
