@@ -57,7 +57,7 @@ const Header = () => {
                   <User className="h-4 w-4" />Dashboard
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-2" onClick={signOut}>
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-2" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />Sign Out
               </Button>
             </>
