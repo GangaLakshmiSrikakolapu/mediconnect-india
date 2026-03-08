@@ -8,41 +8,79 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const specializationDoctorNames: Record<string, string> = {
-  "General Medicine": "Dr. General Physician",
-  "Cardiology": "Dr. Cardio Specialist",
-  "Neurology": "Dr. Neuro Specialist",
-  "Orthopedic": "Dr. Ortho Specialist",
-  "Gynecology": "Dr. Gynec Specialist",
-  "Pediatrics": "Dr. Pediatric Specialist",
-  "Dermatology": "Dr. Derma Specialist",
-  "ENT": "Dr. ENT Specialist",
-  "Eye Care": "Dr. Eye Care Specialist",
-  "Gastroenterology": "Dr. Gastro Specialist",
-  "Pulmonology": "Dr. Pulmo Specialist",
-  "Mental Health": "Dr. Mental Health Specialist",
-  "Emergency": "Dr. Emergency Specialist",
-};
+const doctorNames = [
+  "Arjun Kumar", "Priya Sharma", "Rahul Mehta", "Sneha Reddy",
+  "Vikram Singh", "Anjali Patel", "Deepak Nair", "Swathi Rao",
+  "Arun Joshi", "Kavitha Iyer", "Suresh Menon", "Divya Krishnan",
+  "Manoj Tiwari", "Neha Gupta", "Ravi Shankar", "Pooja Deshmukh",
+  "Sanjay Verma", "Lakshmi Narayan", "Amit Saxena", "Meera Kulkarni",
+  "Kiran Bhat", "Anita Mishra", "Rajesh Pillai", "Sunita Choudhary",
+  "Harish Babu", "Rekha Yadav", "Venkat Raman", "Padma Sundaram",
+  "Ashok Pandey", "Geeta Mahajan", "Naveen Prasad", "Smitha Thomas",
+  "Ganesh Hegde", "Bhavana Shetty", "Pranav Kapoor", "Isha Malhotra",
+  "Tarun Bose", "Nandini Sen", "Siddharth Das", "Ritu Agarwal",
+];
 
-function generateSampleSlots(doctorId: string): any[] {
+const educationOptions = [
+  "MBBS – AIIMS Delhi",
+  "MD (Cardiology) – PGIMER Chandigarh",
+  "MS (ENT) – JIPMER Puducherry",
+  "MBBS – Osmania Medical College",
+  "MD – Apollo Institute of Medical Sciences",
+  "MBBS – CMC Vellore",
+  "MD (Pediatrics) – KGMU Lucknow",
+  "MS (Orthopedics) – MAMC Delhi",
+  "MBBS – Grant Medical College Mumbai",
+  "MD (Dermatology) – NIMHANS Bangalore",
+  "MBBS – Madras Medical College",
+  "MD (Neurology) – SGPGI Lucknow",
+  "MS (Ophthalmology) – Sankara Nethralaya",
+  "MBBS – KMC Manipal",
+  "MD (Pulmonology) – VPCI Delhi",
+  "MBBS – BHU Varanasi",
+  "MD (Psychiatry) – NIMHANS Bangalore",
+  "MS (General Surgery) – AIIMS Delhi",
+  "MBBS – Armed Forces Medical College Pune",
+  "MD (Gastroenterology) – Asian Institute Hyderabad",
+];
+
+const slotTimes = [
+  "09:00", "09:30", "10:00", "10:30", "11:00",
+  "14:00", "14:30", "15:00", "15:30", "16:00",
+  "18:00", "18:30", "19:00",
+];
+
+function generateSlots(doctorId: string): any[] {
   const slots = [];
   const today = new Date();
-  // Generate slots for the next 7 days
   for (let day = 1; day <= 7; day++) {
     const date = new Date(today);
     date.setDate(today.getDate() + day);
     const dateStr = date.toISOString().split("T")[0];
-    // 6 slots per day: 09:00, 10:00, 11:00, 14:00, 15:00, 16:00
-    for (const time of ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]) {
-      slots.push({
-        doctor_id: doctorId,
-        slot_date: dateStr,
-        slot_time: time,
-        is_booked: false,
-      });
+    for (const time of slotTimes) {
+      slots.push({ doctor_id: doctorId, slot_date: dateStr, slot_time: time, is_booked: false });
     }
   }
   return slots;
+}
+
+let nameIndex = 0;
+function getUniqueName(usedNames: Set<string>): string {
+  for (let i = 0; i < doctorNames.length; i++) {
+    const idx = (nameIndex + i) % doctorNames.length;
+    if (!usedNames.has(doctorNames[idx])) {
+      nameIndex = idx + 1;
+      usedNames.add(doctorNames[idx]);
+      return doctorNames[idx];
+    }
+  }
+  const fallback = `Doctor ${Date.now()}`;
+  usedNames.add(fallback);
+  return fallback;
+}
+
+function getEducation(): string {
+  return educationOptions[Math.floor(Math.random() * educationOptions.length)];
 }
 
 serve(async (req) => {
@@ -74,62 +112,56 @@ serve(async (req) => {
     }
 
     if (action === "update_status" && hospitalId && status) {
-      // Update hospital status
       const { error } = await supabaseAdmin.from("hospitals").update({ status }).eq("id", hospitalId);
       if (error) throw error;
 
-      // If approved, auto-create doctors and time slots
       if (status === "approved") {
         const { data: hospital } = await supabaseAdmin
-          .from("hospitals")
-          .select("*")
-          .eq("id", hospitalId)
-          .single();
+          .from("hospitals").select("*").eq("id", hospitalId).single();
 
         if (hospital) {
           const { data: existingDoctors } = await supabaseAdmin
-            .from("doctors")
-            .select("specialization, name")
-            .eq("hospital_id", hospitalId);
+            .from("doctors").select("name, specialization").eq("hospital_id", hospitalId);
 
-          const existingNames = new Set((existingDoctors || []).map((d: any) => d.name));
-          const existingSpecs = new Set((existingDoctors || []).map((d: any) => d.specialization));
+          const usedNames = new Set((existingDoctors || []).map((d: any) => d.name));
+          const specCounts: Record<string, number> = {};
+          for (const d of existingDoctors || []) {
+            specCounts[d.specialization] = (specCounts[d.specialization] || 0) + 1;
+          }
 
-          const defaultDoctors = [
-            { name: "Arjun Kumar", specialization: "General Medicine", experience: 5 },
-            { name: "Priya Sharma", specialization: "General Medicine", experience: 7 },
-          ].filter(d => !existingNames.has(d.name));
+          const newDoctors: any[] = [];
+          const specs = hospital.specializations || [];
 
-          const specDoctors = (hospital.specializations || [])
-            .filter((spec: string) => !existingSpecs.has(spec) && spec !== "General Medicine")
-            .map((spec: string) => ({
-              name: specializationDoctorNames[spec] || `Dr. ${spec} Specialist`,
-              specialization: spec,
-              experience: Math.floor(Math.random() * 15) + 3,
-            }));
+          // Ensure "General Medicine" is always included
+          const allSpecs = specs.includes("General Medicine") ? specs : ["General Medicine", ...specs];
 
-          const newDoctors = [...defaultDoctors, ...specDoctors].map(d => ({
-            ...d,
-            hospital_id: hospitalId,
-          }));
+          for (const spec of allSpecs) {
+            const existing = specCounts[spec] || 0;
+            const target = spec === "General Medicine" ? 3 : 2; // 3 for General Medicine, 2 for others
+            const needed = Math.max(0, target - existing);
+
+            for (let i = 0; i < needed; i++) {
+              newDoctors.push({
+                name: getUniqueName(usedNames),
+                specialization: spec,
+                hospital_id: hospitalId,
+                experience: Math.floor(Math.random() * 8) + 3, // 3-10 years
+                education_details: getEducation(),
+              });
+            }
+          }
 
           if (newDoctors.length > 0) {
-            const { data: createdDoctors, error: doctorError } = await supabaseAdmin
-              .from("doctors")
-              .insert(newDoctors)
-              .select();
+            const { data: created, error: docErr } = await supabaseAdmin
+              .from("doctors").insert(newDoctors).select();
 
-            if (doctorError) {
-              console.error("Error creating doctors:", doctorError);
-            } else if (createdDoctors) {
-              const allSlots = createdDoctors.flatMap((doc: any) => generateSampleSlots(doc.id));
+            if (docErr) {
+              console.error("Error creating doctors:", docErr);
+            } else if (created) {
+              const allSlots = created.flatMap((doc: any) => generateSlots(doc.id));
               if (allSlots.length > 0) {
-                const { error: slotError } = await supabaseAdmin
-                  .from("time_slots")
-                  .insert(allSlots);
-                if (slotError) {
-                  console.error("Error creating slots:", slotError);
-                }
+                const { error: slotErr } = await supabaseAdmin.from("time_slots").insert(allSlots);
+                if (slotErr) console.error("Error creating slots:", slotErr);
               }
             }
           }

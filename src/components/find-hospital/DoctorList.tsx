@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { User, Clock } from 'lucide-react';
+import { User, Clock, GraduationCap } from 'lucide-react';
 
 const DoctorList = ({ hospitalId, healthProblem, onSelectDoctor, onBack }: { hospitalId: string; healthProblem: string; onSelectDoctor: (id: string) => void; onBack: () => void }) => {
   const { t } = useLanguage();
@@ -26,11 +26,25 @@ const DoctorList = ({ hospitalId, healthProblem, onSelectDoctor, onBack }: { hos
         <Card key={d.id} className="hover:shadow-md transition-shadow">
           <CardHeader className="pb-2 flex-row items-center gap-3">
             <div className="rounded-full bg-primary/10 p-2.5"><User className="h-5 w-5 text-primary" /></div>
-            <div><CardTitle className="text-base">Dr. {d.name}</CardTitle><p className="text-sm text-muted-foreground">{d.specialization}</p></div>
+            <div>
+              <CardTitle className="text-base">Dr. {d.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">{d.specialization}</p>
+            </div>
           </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3.5 w-3.5" />{d.experience} {t.findHospital.years} {t.findHospital.experience}</span>
-            <Button size="sm" onClick={() => onSelectDoctor(d.id)}>{t.findHospital.bookAppointment}</Button>
+          <CardContent className="space-y-2">
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />{d.experience} {t.findHospital.years} {t.findHospital.experience}
+              </span>
+              {(d as any).education_details && (
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <GraduationCap className="h-3.5 w-3.5" />{(d as any).education_details}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => onSelectDoctor(d.id)}>{t.findHospital.bookAppointment}</Button>
+            </div>
           </CardContent>
         </Card>
       ))}
