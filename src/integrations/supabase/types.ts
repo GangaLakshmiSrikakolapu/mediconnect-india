@@ -85,29 +85,38 @@ export type Database = {
         Row: {
           created_at: string
           education_details: string | null
+          email: string | null
           experience: number
           hospital_id: string
           id: string
           name: string
+          phone: string | null
           specialization: string
+          status: string | null
         }
         Insert: {
           created_at?: string
           education_details?: string | null
+          email?: string | null
           experience?: number
           hospital_id: string
           id?: string
           name: string
+          phone?: string | null
           specialization: string
+          status?: string | null
         }
         Update: {
           created_at?: string
           education_details?: string | null
+          email?: string | null
           experience?: number
           hospital_id?: string
           id?: string
           name?: string
+          phone?: string | null
           specialization?: string
+          status?: string | null
         }
         Relationships: [
           {
