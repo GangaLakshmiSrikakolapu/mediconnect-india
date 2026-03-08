@@ -14,6 +14,7 @@ import { CheckCircle, Plus, Trash2, UserPlus, ArrowRight } from 'lucide-react';
 
 type DoctorEntry = {
   name: string;
+  age: string;
   email: string;
   phone: string;
   specialization: string;
@@ -21,7 +22,7 @@ type DoctorEntry = {
   experience: string;
 };
 
-const emptyDoctor: DoctorEntry = { name: '', email: '', phone: '', specialization: '', education: '', experience: '' };
+const emptyDoctor: DoctorEntry = { name: '', age: '', email: '', phone: '', specialization: '', education: '', experience: '' };
 
 const HospitalRequest = () => {
   const { t } = useLanguage();
