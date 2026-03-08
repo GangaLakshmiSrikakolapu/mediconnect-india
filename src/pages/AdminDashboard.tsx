@@ -17,18 +17,15 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('pending');
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/admin/login'); return; }
-      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin');
-      if (!roles || roles.length === 0) navigate('/admin/login');
-    };
-    checkAuth();
+    const isAdmin = sessionStorage.getItem('mediconnect_admin');
+    if (!isAdmin) navigate('/admin/login');
   }, [navigate]);
 
   const { data: hospitals, isLoading } = useQuery({
     queryKey: ['admin-hospitals'],
     queryFn: async () => {
+      // Use service-level query via edge function or direct query
+      // Since admin is validated via private key, we query all hospitals
       const { data, error } = await supabase.from('hospitals').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data;
@@ -46,8 +43,8 @@ const AdminDashboard = () => {
     },
   });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    sessionStorage.removeItem('mediconnect_admin');
     navigate('/admin/login');
   };
 
