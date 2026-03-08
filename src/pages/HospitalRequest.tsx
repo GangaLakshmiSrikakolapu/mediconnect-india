@@ -70,6 +70,10 @@ const HospitalRequest = () => {
     if (doctors.length === 0) { toast({ title: 'Add at least one doctor', variant: 'destructive' }); return; }
     setLoading(true);
     try {
+      // Set role in localStorage BEFORE signUp so detectRole fallback picks it up
+      localStorage.setItem('mediconnect_role', 'hospitalAdmin');
+      localStorage.setItem('mediconnect_last_role', 'hospitalAdmin');
+
       // 1. Create Supabase auth account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: accountEmail,
