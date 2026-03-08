@@ -5,8 +5,45 @@ const ADMIN_PRIVATE_KEY = "1234";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const specializationDoctorNames: Record<string, string> = {
+  "General Medicine": "Dr. General Physician",
+  "Cardiology": "Dr. Cardio Specialist",
+  "Neurology": "Dr. Neuro Specialist",
+  "Orthopedic": "Dr. Ortho Specialist",
+  "Gynecology": "Dr. Gynec Specialist",
+  "Pediatrics": "Dr. Pediatric Specialist",
+  "Dermatology": "Dr. Derma Specialist",
+  "ENT": "Dr. ENT Specialist",
+  "Eye Care": "Dr. Eye Care Specialist",
+  "Gastroenterology": "Dr. Gastro Specialist",
+  "Pulmonology": "Dr. Pulmo Specialist",
+  "Mental Health": "Dr. Mental Health Specialist",
+  "Emergency": "Dr. Emergency Specialist",
+};
+
+function generateSampleSlots(doctorId: string): any[] {
+  const slots = [];
+  const today = new Date();
+  // Generate slots for the next 7 days
+  for (let day = 1; day <= 7; day++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + day);
+    const dateStr = date.toISOString().split("T")[0];
+    // 6 slots per day: 09:00, 10:00, 11:00, 14:00, 15:00, 16:00
+    for (const time of ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]) {
+      slots.push({
+        doctor_id: doctorId,
+        slot_date: dateStr,
+        slot_time: time,
+        is_booked: false,
+      });
+    }
+  }
+  return slots;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -37,8 +74,64 @@ serve(async (req) => {
     }
 
     if (action === "update_status" && hospitalId && status) {
+      // Update hospital status
       const { error } = await supabaseAdmin.from("hospitals").update({ status }).eq("id", hospitalId);
       if (error) throw error;
+
+      // If approved, auto-create doctors and time slots
+      if (status === "approved") {
+        // Fetch hospital details
+        const { data: hospital } = await supabaseAdmin
+          .from("hospitals")
+          .select("*")
+          .eq("id", hospitalId)
+          .single();
+
+        if (hospital && hospital.specializations && hospital.specializations.length > 0) {
+          // Check if doctors already exist for this hospital
+          const { data: existingDoctors } = await supabaseAdmin
+            .from("doctors")
+            .select("specialization")
+            .eq("hospital_id", hospitalId);
+
+          const existingSpecs = new Set((existingDoctors || []).map((d: any) => d.specialization));
+
+          // Create doctors for each specialization that doesn't have one yet
+          const newDoctors = hospital.specializations
+            .filter((spec: string) => !existingSpecs.has(spec))
+            .map((spec: string) => ({
+              name: specializationDoctorNames[spec] || `Dr. ${spec} Specialist`,
+              specialization: spec,
+              hospital_id: hospitalId,
+              experience: Math.floor(Math.random() * 15) + 3, // 3-17 years
+            }));
+
+          if (newDoctors.length > 0) {
+            const { data: createdDoctors, error: doctorError } = await supabaseAdmin
+              .from("doctors")
+              .insert(newDoctors)
+              .select();
+
+            if (doctorError) {
+              console.error("Error creating doctors:", doctorError);
+            } else if (createdDoctors) {
+              // Create time slots for each new doctor
+              const allSlots = createdDoctors.flatMap((doc: any) => generateSampleSlots(doc.id));
+              
+              if (allSlots.length > 0) {
+                const { error: slotError } = await supabaseAdmin
+                  .from("time_slots")
+                  .insert(allSlots);
+
+                if (slotError) {
+                  console.error("Error creating slots:", slotError);
+                }
+              }
+            }
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
