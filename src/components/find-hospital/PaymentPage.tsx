@@ -26,7 +26,7 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
       // Book the slot
       await supabase.from('time_slots').update({ is_booked: true }).eq('id', slotId);
       // Create appointment
-      await supabase.from('appointments').insert({
+      const { data: appointment } = await supabase.from('appointments').insert({
         patient_name: patientData.name,
         patient_age: parseInt(patientData.age),
         patient_phone: phone,
@@ -37,7 +37,13 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
         health_problem: patientData.healthProblem,
         payment_status: 'completed',
         transaction_id: transactionId,
-      });
+      }).select().single();
+      // Send email notification
+      if (appointment) {
+        await supabase.functions.invoke('booking-notification', {
+          body: { appointmentId: appointment.id },
+        }).catch(console.error);
+      }
       toast({ title: t.payment.success });
       onSuccess();
     } catch {
