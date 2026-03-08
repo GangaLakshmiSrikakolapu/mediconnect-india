@@ -18,6 +18,13 @@ import DoctorLogin from "./pages/DoctorLogin";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import PatientSignup from "./pages/PatientSignup";
 import PatientDashboard from "./pages/PatientDashboard";
+import PatientFindHospitals from "./pages/PatientFindHospitals";
+import PatientHospitalDetail from "./pages/PatientHospitalDetail";
+import PatientAppointments from "./pages/PatientAppointments";
+import PatientRecords from "./pages/PatientRecords";
+import PatientInsurance from "./pages/PatientInsurance";
+import PatientProfile from "./pages/PatientProfile";
+import PatientSettings from "./pages/PatientSettings";
 import HospitalAdminLogin from "./pages/HospitalAdminLogin";
 import HospitalAdminDashboard from "./pages/HospitalAdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
@@ -45,6 +52,17 @@ const App = () => (
               <Route path="/patient/signup" element={<PatientSignup />} />
               <Route path="/patient/login" element={<AuthPage />} />
               <Route path="/patient/dashboard" element={<PatientDashboard />} />
+              <Route path="/patient/find-hospitals" element={<PatientFindHospitals />} />
+              <Route path="/patient/hospital/:id" element={<PatientHospitalDetail />} />
+              <Route path="/patient/appointments" element={<PatientAppointments />} />
+              <Route path="/patient/records" element={<PatientRecords />} />
+              <Route path="/patient/insurance" element={<PatientInsurance />} />
+              <Route path="/patient/profile" element={<PatientProfile />} />
+              <Route path="/patient/settings" element={<PatientSettings />} />
+              <Route path="/patient/teleconsult" element={<PatientDashboard />} />
+              <Route path="/patient/lab-tests" element={<PatientDashboard />} />
+              <Route path="/patient/medicines" element={<PatientDashboard />} />
+              <Route path="/patient/support" element={<PatientDashboard />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/doctor/login" element={<DoctorLogin />} />
