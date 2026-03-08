@@ -95,7 +95,12 @@ const PatientDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user?.email]);
 
-  const queryClient = useQueryClient();
+  const getHospitalRating = (hId: string) => {
+    const hRevs = (hospitalReviews || []).filter((r: any) => r.hospital_id === hId);
+    if (hRevs.length === 0) return { avg: 'New', count: 0 };
+    const avg = (hRevs.reduce((s: number, r: any) => s + r.rating, 0) / hRevs.length).toFixed(1);
+    return { avg, count: hRevs.length };
+  };
 
   if (!user || authLoading) return null;
 
