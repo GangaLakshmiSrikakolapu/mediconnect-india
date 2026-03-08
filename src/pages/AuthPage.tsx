@@ -100,14 +100,46 @@ const AuthPage = () => {
   /* redirect already-authed users */
   const [checking, setChecking] = useState(true);
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const role = await resolveRole(session.user.id, session.user.email ?? '');
-        navigate(getRedirectForRole(role), { replace: true });
-      } else {
-        setChecking(false);
+    let active = true;
+
+    const init = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        const session = data.session;
+        if (session?.user) {
+          const role = await resolveRole(session.user.id, session.user.email ?? '');
+          localStorage.setItem('mediconnect_role', role);
+          localStorage.setItem('mediconnect_last_role', role);
+
+          if (role === 'hospitalAdmin') {
+            await hydrateHospitalSession(session.user.id, session.user.email ?? '');
+          }
+
+          if (active) {
+            navigate(getRedirectForRole(role), { replace: true });
+          }
+          return;
+        }
+      } catch {
+        await supabase.auth.signOut({ scope: 'local' });
+      } finally {
+        if (active) setChecking(false);
       }
-    });
+    };
+
+    // Hard timeout so auth page never gets stuck on spinner
+    const timeout = window.setTimeout(() => {
+      if (active) setChecking(false);
+    }, 5000);
+
+    init();
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
   }, [navigate]);
 
   /* ── forgot password ── */
