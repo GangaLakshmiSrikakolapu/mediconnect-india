@@ -6,8 +6,14 @@ import { useAuth } from '@/hooks/useAuth';
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, role, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/', { replace: true });
+  };
 
   // Hide header on auth, dashboard, and admin pages
   if (location.pathname === '/auth' || location.pathname === '/auth/reset-password') return null;
