@@ -25,33 +25,32 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-  <LanguageProvider>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Header />
-      <BrowserRouter>
-        <Header />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/insurance" element={<Insurance />} />
-          <Route path="/find-hospital" element={<FindHospital />} />
-          <Route path="/hospitals" element={<Hospitals />} />
-          <Route path="/hospital-request" element={<HospitalRequest />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/doctor/login" element={<DoctorLogin />} />
-          <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
-          <Route path="/patient/login" element={<PatientLogin />} />
-          <Route path="/patient/signup" element={<PatientSignup />} />
-          <Route path="/patient/dashboard" element={<PatientDashboard />} />
-          <Route path="/hospital-admin/login" element={<HospitalAdminLogin />} />
-          <Route path="/hospital-admin/dashboard" element={<HospitalAdminDashboard />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <LanguageProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Header />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/insurance" element={<Insurance />} />
+            <Route path="/find-hospital" element={<FindHospital />} />
+            <Route path="/hospitals" element={<Hospitals />} />
+            <Route path="/hospital-request" element={<HospitalRequest />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/doctor/login" element={<DoctorLogin />} />
+            <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+            <Route path="/patient/login" element={<PatientLogin />} />
+            <Route path="/patient/signup" element={<PatientSignup />} />
+            <Route path="/patient/dashboard" element={<PatientDashboard />} />
+            <Route path="/hospital-admin/login" element={<HospitalAdminLogin />} />
+            <Route path="/hospital-admin/dashboard" element={<HospitalAdminDashboard />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 
