@@ -14,7 +14,10 @@ import {
   ArrowRight, ArrowLeft, CheckCircle, Eye, EyeOff,
   MapPin, Droplets, Activity, Shield
 } from 'lucide-react';
-import { indianStates, getDistrictsByState } from '@/data/indianLocations';
+import { indianStatesAndDistricts } from '@/data/indianLocations';
+
+const indianStates = Object.keys(indianStatesAndDistricts);
+const getDistrictsByState = (state: string) => indianStatesAndDistricts[state] || [];
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 const CONDITIONS = ['Diabetes', 'Hypertension', 'Heart Disease', 'Asthma', 'Thyroid', 'Arthritis', 'None'];
