@@ -14,6 +14,11 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import DoctorLogin from "./pages/DoctorLogin";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import PatientLogin from "./pages/PatientLogin";
+import PatientSignup from "./pages/PatientSignup";
+import PatientDashboard from "./pages/PatientDashboard";
+import HospitalAdminLogin from "./pages/HospitalAdminLogin";
+import HospitalAdminDashboard from "./pages/HospitalAdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +41,11 @@ const App = () => (
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/doctor/login" element={<DoctorLogin />} />
             <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+            <Route path="/patient/login" element={<PatientLogin />} />
+            <Route path="/patient/signup" element={<PatientSignup />} />
+            <Route path="/patient/dashboard" element={<PatientDashboard />} />
+            <Route path="/hospital-admin/login" element={<HospitalAdminLogin />} />
+            <Route path="/hospital-admin/dashboard" element={<HospitalAdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
