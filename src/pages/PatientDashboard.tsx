@@ -280,11 +280,13 @@ const PatientDashboard = () => {
                       <Building2 className="h-10 w-10 text-primary/30" />
                     </div>
                     <p className="font-semibold text-sm truncate">{h.name}</p>
+                    {(() => { const r = getHospitalRating(h.id); return (
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="h-3 w-3 text-warning fill-warning" />
-                      <span className="text-xs font-medium">4.5</span>
-                      <span className="text-xs text-muted-foreground ml-1">· {h.district}</span>
+                      <span className="text-xs font-medium">{r.avg}</span>
+                      <span className="text-xs text-muted-foreground ml-1">{r.count > 0 ? `· ${r.count} reviews` : ''} · {h.district}</span>
                     </div>
+                    ); })()}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {(h.specializations || []).slice(0, 2).map((s: string) => (
                         <Badge key={s} variant="secondary" className="text-[10px] px-1.5 py-0">{s}</Badge>
