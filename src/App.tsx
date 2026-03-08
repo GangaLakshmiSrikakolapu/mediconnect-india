@@ -26,7 +26,14 @@ import PatientInsurance from "./pages/PatientInsurance";
 import PatientProfile from "./pages/PatientProfile";
 import PatientSettings from "./pages/PatientSettings";
 import HospitalAdminLogin from "./pages/HospitalAdminLogin";
-import HospitalAdminDashboard from "./pages/HospitalAdminDashboard";
+import HospitalDashboardHome from "./pages/HospitalDashboardHome";
+import HospitalAppointments from "./pages/HospitalAppointments";
+import HospitalDoctors from "./pages/HospitalDoctors";
+import HospitalDepartments from "./pages/HospitalDepartments";
+import HospitalPatients from "./pages/HospitalPatients";
+import HospitalAnalytics from "./pages/HospitalAnalytics";
+import HospitalReviews from "./pages/HospitalReviews";
+import HospitalSettings from "./pages/HospitalSettings";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -68,7 +75,19 @@ const App = () => (
               <Route path="/doctor/login" element={<DoctorLogin />} />
               <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
               <Route path="/hospital-admin/login" element={<HospitalAdminLogin />} />
-              <Route path="/hospital-admin/dashboard" element={<HospitalAdminDashboard />} />
+              <Route path="/hospital/dashboard" element={<HospitalDashboardHome />} />
+              <Route path="/hospital/appointments" element={<HospitalAppointments />} />
+              <Route path="/hospital/doctors" element={<HospitalDoctors />} />
+              <Route path="/hospital/departments" element={<HospitalDepartments />} />
+              <Route path="/hospital/patients" element={<HospitalPatients />} />
+              <Route path="/hospital/analytics" element={<HospitalAnalytics />} />
+              <Route path="/hospital/reviews" element={<HospitalReviews />} />
+              <Route path="/hospital/settings" element={<HospitalSettings />} />
+              <Route path="/hospital/staff" element={<HospitalSettings />} />
+              <Route path="/hospital/billing" element={<HospitalSettings />} />
+              <Route path="/hospital/announcements" element={<HospitalDashboardHome />} />
+              {/* Legacy redirect */}
+              <Route path="/hospital-admin/dashboard" element={<HospitalDashboardHome />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
