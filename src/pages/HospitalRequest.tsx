@@ -13,7 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { CheckCircle, Plus, Trash2, UserPlus, ArrowRight, Loader2 } from 'lucide-react';
 
 type DoctorEntry = {
-  name: string;
+  doctor_name: string;
   age: string;
   email: string;
   phone: string;
@@ -22,10 +22,10 @@ type DoctorEntry = {
   experience: string;
 };
 
-const emptyDoctor: DoctorEntry = { name: '', age: '', email: '', phone: '', specialization: '', education: '', experience: '' };
+const emptyDoctor: DoctorEntry = { doctor_name: '', age: '', email: '', phone: '', specialization: '', education: '', experience: '' };
 
 const validateDoctor = (d: DoctorEntry): string | null => {
-  if (!d.name.trim()) return 'Doctor Name is required';
+  if (!d.doctor_name.trim()) return 'Doctor Name is required';
   if (!d.email.trim()) return 'Doctor Email is required';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) return 'Please enter a valid email address';
   if (!d.phone.trim()) return 'Phone Number is required';
@@ -70,10 +70,10 @@ const HospitalRequest = () => {
     }
     setDoctorErrors(null);
     setDoctors(prev => [...prev, { ...currentDoctor }]);
+    toast({ title: `Dr. ${currentDoctor.doctor_name} added successfully` });
     if (clearAfter) {
       setCurrentDoctor({ ...emptyDoctor });
     }
-    toast({ title: `Dr. ${currentDoctor.name} added successfully` });
     return true;
   };
 
@@ -88,6 +88,7 @@ const HospitalRequest = () => {
     }
     setLoading(true);
     try {
+      // Upload QR if provided
       let qrUrl: string | null = null;
       if (qrFile) {
         const filePath = `qr/${Date.now()}-${qrFile.name}`;
@@ -102,63 +103,45 @@ const HospitalRequest = () => {
         qrUrl = urlData.publicUrl;
       }
 
-      const { data: hospital, error: hospError } = await supabase.from('hospitals').insert({
-        name: form.name, email: form.email, phone: form.phone,
-        state: form.state, district: form.district, address: form.address,
-        specializations: specs, upi_qr_url: qrUrl,
-      }).select().single();
+      // Send everything to the edge function
+      const payload = {
+        hospital_name: form.name,
+        email: form.email,
+        phone: form.phone,
+        state: form.state,
+        district: form.district,
+        address: form.address,
+        specializations: specs,
+        upi_qr_url: qrUrl,
+        doctors: doctors.map(d => ({
+          doctor_name: d.doctor_name,
+          age: d.age,
+          email: d.email,
+          phone: d.phone,
+          specialization: d.specialization,
+          education: d.education,
+          experience: d.experience,
+        })),
+      };
 
-      if (hospError) {
-        console.error('Hospital submission error:', hospError);
-        if (hospError.message.includes('duplicate')) {
-          toast({ title: 'A hospital with this information already exists.', variant: 'destructive' });
-        } else {
-          toast({ title: 'Failed to submit hospital request. Please try again.', variant: 'destructive' });
-        }
+      console.log('Submitting hospital request:', JSON.stringify(payload, null, 2));
+
+      const { data, error } = await supabase.functions.invoke('hospital-request', {
+        body: payload,
+      });
+
+      if (error) {
+        console.error('Edge function invocation error:', error);
+        toast({ title: 'Failed to submit hospital request. Please try again.', variant: 'destructive' });
         setLoading(false);
         return;
       }
 
-      // Insert doctors into doctors_request table
-      const doctorRows = doctors.map(d => ({
-        doctor_name: d.name,
-        age: d.age,
-        email: d.email,
-        phone: d.phone,
-        specialization: d.specialization,
-        education: d.education,
-        experience: d.experience,
-        hospital_id: hospital.id,
-      }));
-
-      const { error: docError } = await supabase.from('doctors_request' as any).insert(doctorRows as any);
-      if (docError) {
-        console.error('Doctor submission error:', docError);
-        if (docError.message.includes('duplicate')) {
-          toast({ title: 'One or more doctor emails already exist.', variant: 'destructive' });
-        } else {
-          toast({ title: 'Hospital saved but failed to save doctor details. Please contact support.', variant: 'destructive' });
-        }
+      if (data?.error) {
+        console.error('Backend validation error:', data.error);
+        toast({ title: data.error, variant: 'destructive' });
         setLoading(false);
         return;
-      }
-
-      // Also insert into doctors table for direct linking
-      const doctorTableRows = doctors.map(d => ({
-        name: d.name,
-        age: parseInt(d.age) || 0,
-        email: d.email,
-        phone: d.phone,
-        specialization: d.specialization,
-        education_details: d.education,
-        experience: parseInt(d.experience) || 0,
-        hospital_id: hospital.id,
-        status: 'pending',
-      }));
-
-      const { error: docTableError } = await supabase.from('doctors').insert(doctorTableRows);
-      if (docTableError) {
-        console.error('Doctor table insertion error:', docTableError);
       }
 
       setStep('done');
@@ -175,7 +158,7 @@ const HospitalRequest = () => {
       <div className="container py-16 text-center animate-fade-in">
         <CheckCircle className="h-16 w-16 text-accent mx-auto mb-4" />
         <h2 className="font-heading text-2xl font-bold mb-2">Hospital request submitted successfully.</h2>
-        <p className="text-muted-foreground">Your request will be reviewed by Super Admin. {doctors.length} doctor(s) have been submitted for review.</p>
+        <p className="text-muted-foreground">Your request will be reviewed by Super Admin. {doctors.length} doctor(s) have been submitted.</p>
       </div>
     );
   }
@@ -247,7 +230,7 @@ const HospitalRequest = () => {
             <CardHeader><CardTitle>Add Doctor Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><Label>Doctor Name *</Label><Input value={currentDoctor.name} onChange={e => { setCurrentDoctor({ ...currentDoctor, name: e.target.value }); setDoctorErrors(null); }} placeholder="e.g. Dr. Arjun Kumar" /></div>
+                <div><Label>Doctor Name *</Label><Input value={currentDoctor.doctor_name} onChange={e => { setCurrentDoctor({ ...currentDoctor, doctor_name: e.target.value }); setDoctorErrors(null); }} placeholder="e.g. Dr. Arjun Kumar" /></div>
                 <div><Label>Age</Label><Input type="number" value={currentDoctor.age} onChange={e => setCurrentDoctor({ ...currentDoctor, age: e.target.value })} placeholder="e.g. 35" /></div>
                 <div><Label>Email (Gmail) *</Label><Input type="email" value={currentDoctor.email} onChange={e => { setCurrentDoctor({ ...currentDoctor, email: e.target.value }); setDoctorErrors(null); }} placeholder="doctor@gmail.com" /></div>
                 <div><Label>Phone Number *</Label><Input value={currentDoctor.phone} onChange={e => { setCurrentDoctor({ ...currentDoctor, phone: e.target.value }); setDoctorErrors(null); }} placeholder="10-digit number" /></div>
@@ -280,7 +263,7 @@ const HospitalRequest = () => {
                   {doctors.map((d, i) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
-                        <p className="font-medium text-sm">Dr. {d.name}</p>
+                        <p className="font-medium text-sm">Dr. {d.doctor_name}</p>
                         <p className="text-xs text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
                         <p className="text-xs text-muted-foreground">{d.email} {d.phone && `· ${d.phone}`}</p>
                       </div>
@@ -326,7 +309,7 @@ const HospitalRequest = () => {
               <div className="space-y-2">
                 {doctors.map((d, i) => (
                   <div key={i} className="p-3 rounded-lg bg-muted/50 text-sm">
-                    <p className="font-medium">Dr. {d.name}</p>
+                    <p className="font-medium">Dr. {d.doctor_name}</p>
                     <p className="text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
                     {(d.email || d.phone) && <p className="text-muted-foreground">{d.email} {d.phone && `· ${d.phone}`}</p>}
                   </div>
@@ -339,7 +322,7 @@ const HospitalRequest = () => {
             <Button variant="outline" onClick={() => setStep('doctors')}>Back</Button>
             <Button className="flex-1" onClick={handleFinalSubmit} disabled={loading}>
               {loading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting request...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting hospital request...</>
               ) : (
                 'SUBMIT HOSPITAL REQUEST'
               )}

@@ -1,1 +1,13 @@
 project_id = "qtpywagthlyzdorhliwm"
+
+[functions.hospital-request]
+verify_jwt = false
+
+[functions.admin-hospitals]
+verify_jwt = false
+
+[functions.validate-admin-key]
+verify_jwt = false
+
+[functions.booking-notification]
+verify_jwt = false
