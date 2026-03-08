@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshRole = useCallback(async () => {
     if (!state.user) return;
-    const role = await detectRole(state.user.id);
+    const role = await detectRole(state.user.id, state.user.email);
     setState(s => ({ ...s, role }));
     localStorage.setItem('mediconnect_role', role);
   }, [state.user, detectRole]);
