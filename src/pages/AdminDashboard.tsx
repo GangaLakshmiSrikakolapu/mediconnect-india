@@ -17,28 +17,29 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('pending');
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/admin/login'); return; }
-      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin');
-      if (!roles || roles.length === 0) navigate('/admin/login');
-    };
-    checkAuth();
+    const isAdmin = sessionStorage.getItem('mediconnect_admin');
+    if (!isAdmin) navigate('/admin/login');
   }, [navigate]);
+
+  const adminKey = sessionStorage.getItem('mediconnect_admin_key') || '';
 
   const { data: hospitals, isLoading } = useQuery({
     queryKey: ['admin-hospitals'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('hospitals').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('admin-hospitals', {
+        body: { key: adminKey, action: 'list' },
+      });
       if (error) throw error;
-      return data;
+      return data?.hospitals || [];
     },
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from('hospitals').update({ status: status as any }).eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('admin-hospitals', {
+        body: { key: adminKey, action: 'update_status', hospitalId: id, status },
+      });
+      if (error || data?.error) throw new Error(data?.error || 'Failed');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-hospitals'] });
@@ -46,12 +47,13 @@ const AdminDashboard = () => {
     },
   });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    sessionStorage.removeItem('mediconnect_admin');
+    sessionStorage.removeItem('mediconnect_admin_key');
     navigate('/admin/login');
   };
 
-  const filtered = hospitals?.filter(h => h.status === activeTab) || [];
+  const filtered = (hospitals as any[])?.filter((h: any) => h.status === activeTab) || [];
 
   return (
     <div className="container py-8 max-w-4xl animate-fade-in">
@@ -62,16 +64,16 @@ const AdminDashboard = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
-          <TabsTrigger value="pending">{t.admin.pending} ({hospitals?.filter(h => h.status === 'pending').length || 0})</TabsTrigger>
-          <TabsTrigger value="approved">{t.admin.approved} ({hospitals?.filter(h => h.status === 'approved').length || 0})</TabsTrigger>
-          <TabsTrigger value="rejected">{t.admin.rejected} ({hospitals?.filter(h => h.status === 'rejected').length || 0})</TabsTrigger>
+          <TabsTrigger value="pending">{t.admin.pending} ({(hospitals as any[])?.filter((h: any) => h.status === 'pending').length || 0})</TabsTrigger>
+          <TabsTrigger value="approved">{t.admin.approved} ({(hospitals as any[])?.filter((h: any) => h.status === 'approved').length || 0})</TabsTrigger>
+          <TabsTrigger value="rejected">{t.admin.rejected} ({(hospitals as any[])?.filter((h: any) => h.status === 'rejected').length || 0})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab}>
           {isLoading ? <p className="text-muted-foreground">{t.common.loading}</p> :
             filtered.length === 0 ? <p className="text-muted-foreground text-center py-8">{t.admin.noRequests}</p> :
             <div className="space-y-4">
-              {filtered.map(h => (
+              {filtered.map((h: any) => (
                 <Card key={h.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
