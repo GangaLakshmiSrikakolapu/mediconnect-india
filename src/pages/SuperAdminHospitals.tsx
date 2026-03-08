@@ -36,19 +36,17 @@ const SuperAdminHospitals = () => {
   const [internalNotes, setInternalNotes] = useState('');
   const [rejectReason, setRejectReason] = useState('');
 
-  const adminKey = sessionStorage.getItem('mediconnect_admin_key') || '';
-
   const { data: hospitals, isLoading } = useQuery({
     queryKey: ['sa-all-hospitals'],
     queryFn: async () => {
-      const { data } = await supabase.functions.invoke('admin-hospitals', { body: { key: adminKey, action: 'list' } });
+      const { data } = await supabase.functions.invoke('admin-hospitals', { body: { action: 'list' } });
       return data?.hospitals || [];
     },
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data, error } = await supabase.functions.invoke('admin-hospitals', { body: { key: adminKey, action: 'update_status', hospitalId: id, status } });
+      const { data, error } = await supabase.functions.invoke('admin-hospitals', { body: { action: 'update_status', hospitalId: id, status } });
       if (error || data?.error) throw new Error(data?.error || 'Failed');
     },
     onSuccess: () => {

@@ -31,8 +31,7 @@ const SuperAdminDashboard = () => {
   const { data: hospitals } = useQuery({
     queryKey: ['sa-hospitals'],
     queryFn: async () => {
-      const adminKey = sessionStorage.getItem('mediconnect_admin_key') || '';
-      const { data } = await supabase.functions.invoke('admin-hospitals', { body: { key: adminKey, action: 'list' } });
+      const { data } = await supabase.functions.invoke('admin-hospitals', { body: { action: 'list' } });
       return data?.hospitals || [];
     },
   });

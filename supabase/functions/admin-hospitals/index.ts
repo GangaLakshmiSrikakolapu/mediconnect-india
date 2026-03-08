@@ -1,7 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const ADMIN_PRIVATE_KEY = "1234";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,25 +70,50 @@ function getEducation(): string {
   return educationOptions[Math.floor(Math.random() * educationOptions.length)];
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { key, action, hospitalId, status } = await req.json();
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    if (!key || key !== ADMIN_PRIVATE_KEY) {
-      return new Response(JSON.stringify({ error: "Invalid key. Try again." }), {
+    // Verify the caller is an admin via JWT
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check admin role
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin");
+
+    if (!roles || roles.length === 0) {
+      return new Response(JSON.stringify({ error: "Access denied. Admin role required." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { action, hospitalId, status } = await req.json();
 
     if (action === "list") {
       const { data, error } = await supabaseAdmin.from("hospitals").select("*").order("created_at", { ascending: false });
@@ -114,17 +136,13 @@ serve(async (req) => {
       if (error) throw error;
 
       if (status === "approved") {
-        // Move doctors from doctors_request to doctors table and activate
-        const { data: requestedDoctors } = await supabaseAdmin
-          .from("doctors_request").select("*").eq("hospital_id", hospitalId);
-
-        // Activate existing doctors
-        await supabaseAdmin.from("doctors").update({ status: "active" }).eq("hospital_id", hospitalId);
-
         const { data: hospital } = await supabaseAdmin
           .from("hospitals").select("*").eq("id", hospitalId).single();
 
         if (hospital) {
+          // Activate existing doctors
+          await supabaseAdmin.from("doctors").update({ status: "active" }).eq("hospital_id", hospitalId);
+
           const { data: existingDoctors } = await supabaseAdmin
             .from("doctors").select("id, name, specialization").eq("hospital_id", hospitalId);
 
@@ -180,15 +198,15 @@ serve(async (req) => {
               }
             }
           }
+
           // Generate access codes for all active doctors
           const { data: allDoctors } = await supabaseAdmin
             .from("doctors").select("id").eq("hospital_id", hospitalId).eq("status", "active");
 
           for (const doc of allDoctors || []) {
-            // Check if code already exists
-            const { data: existing } = await supabaseAdmin
+            const { data: existingCode } = await supabaseAdmin
               .from("doctor_access_codes").select("id").eq("doctor_id", doc.id).limit(1);
-            if (!existing || existing.length === 0) {
+            if (!existingCode || existingCode.length === 0) {
               const code = `DOC-${doc.id.substring(0, 8).toUpperCase()}`;
               await supabaseAdmin.from("doctor_access_codes").insert({
                 doctor_id: doc.id,
@@ -196,7 +214,6 @@ serve(async (req) => {
               });
             }
           }
-          console.log("Access codes generated for hospital:", hospitalId);
         }
       }
 
