@@ -246,8 +246,8 @@ const HospitalRequest = () => {
                 <p className="text-sm text-destructive font-medium">{doctorErrors}</p>
               )}
               <div className="flex gap-2">
-                <Button type="button" onClick={() => addDoctor(false)}>Submit Doctor</Button>
-                <Button type="button" variant="outline" onClick={() => addDoctor(true)}>
+                <Button type="button" onClick={() => addDoctor()}>Submit Doctor</Button>
+                <Button type="button" variant="outline" onClick={() => addDoctor()}>
                   <Plus className="h-4 w-4 mr-1" />Add Another Doctor
                 </Button>
               </div>
