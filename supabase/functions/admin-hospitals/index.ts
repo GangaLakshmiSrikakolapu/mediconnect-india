@@ -80,15 +80,13 @@ serve(async (req) => {
 
       // If approved, auto-create doctors and time slots
       if (status === "approved") {
-        // Fetch hospital details
         const { data: hospital } = await supabaseAdmin
           .from("hospitals")
           .select("*")
           .eq("id", hospitalId)
           .single();
 
-      if (hospital) {
-          // Check if doctors already exist for this hospital
+        if (hospital) {
           const { data: existingDoctors } = await supabaseAdmin
             .from("doctors")
             .select("specialization, name")
@@ -97,13 +95,11 @@ serve(async (req) => {
           const existingNames = new Set((existingDoctors || []).map((d: any) => d.name));
           const existingSpecs = new Set((existingDoctors || []).map((d: any) => d.specialization));
 
-          // Always ensure 2 default General Medicine doctors exist
           const defaultDoctors = [
             { name: "Arjun Kumar", specialization: "General Medicine", experience: 5 },
             { name: "Priya Sharma", specialization: "General Medicine", experience: 7 },
           ].filter(d => !existingNames.has(d.name));
 
-          // Create doctors for each specialization that doesn't have one yet
           const specDoctors = (hospital.specializations || [])
             .filter((spec: string) => !existingSpecs.has(spec) && spec !== "General Medicine")
             .map((spec: string) => ({
@@ -126,14 +122,11 @@ serve(async (req) => {
             if (doctorError) {
               console.error("Error creating doctors:", doctorError);
             } else if (createdDoctors) {
-              // Create time slots for each new doctor
               const allSlots = createdDoctors.flatMap((doc: any) => generateSampleSlots(doc.id));
-              
               if (allSlots.length > 0) {
                 const { error: slotError } = await supabaseAdmin
                   .from("time_slots")
                   .insert(allSlots);
-
                 if (slotError) {
                   console.error("Error creating slots:", slotError);
                 }
@@ -141,6 +134,7 @@ serve(async (req) => {
             }
           }
         }
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
