@@ -89,6 +89,7 @@ const HospitalRequest = () => {
       // Insert doctors linked to hospital
       const doctorRows = doctors.map(d => ({
         name: d.name,
+        age: parseInt(d.age) || 0,
         email: d.email,
         phone: d.phone,
         specialization: d.specialization,
