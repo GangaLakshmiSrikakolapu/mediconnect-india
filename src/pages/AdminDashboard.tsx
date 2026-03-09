@@ -22,13 +22,15 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const isAdmin = sessionStorage.getItem('mediconnect_admin');
-    if (!isAdmin) navigate('/admin/login');
+    const storedKey = sessionStorage.getItem('mediconnect_admin_key');
+    if (!isAdmin || !storedKey) navigate('/admin/login');
   }, [navigate]);
 
   const adminKey = sessionStorage.getItem('mediconnect_admin_key') || '';
 
   const { data: hospitals, isLoading } = useQuery({
     queryKey: ['admin-hospitals'],
+    enabled: Boolean(adminKey),
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('admin-hospitals', {
         body: { key: adminKey, action: 'list' },
