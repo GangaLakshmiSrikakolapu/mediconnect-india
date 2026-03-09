@@ -23,6 +23,7 @@ export type Database = {
           id: string
           patient_age: number
           patient_email: string | null
+          patient_id: string | null
           patient_name: string
           patient_phone: string | null
           payment_status: string
@@ -40,6 +41,7 @@ export type Database = {
           id?: string
           patient_age: number
           patient_email?: string | null
+          patient_id?: string | null
           patient_name: string
           patient_phone?: string | null
           payment_status?: string
@@ -57,6 +59,7 @@ export type Database = {
           id?: string
           patient_age?: number
           patient_email?: string | null
+          patient_id?: string | null
           patient_name?: string
           patient_phone?: string | null
           payment_status?: string
@@ -79,6 +82,13 @@ export type Database = {
             columns: ["hospital_id"]
             isOneToOne: false
             referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
           {
@@ -597,6 +607,33 @@ export type Database = {
           recipient_type?: string
           status?: string | null
           subject?: string
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string
         }
         Relationships: []
       }

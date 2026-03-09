@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { usePatient } from '@/contexts/PatientContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,9 +11,17 @@ import { PatientData } from '@/pages/FindHospital';
 
 const PatientForm = ({ onSubmit }: { onSubmit: (data: PatientData) => void }) => {
   const { t } = useLanguage();
+  const { patient } = usePatient();
   const [form, setForm] = useState<PatientData>({ name: '', age: '', state: '', district: '', healthProblem: '', bookingDate: '' });
   const states = Object.keys(indianStatesAndDistricts).sort();
   const districts = form.state ? indianStatesAndDistricts[form.state] || [] : [];
+
+  // Auto-fill name from patient session
+  useEffect(() => {
+    if (patient?.name && !form.name) {
+      setForm(prev => ({ ...prev, name: patient.name }));
+    }
+  }, [patient]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
