@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { usePatient } from '@/contexts/PatientContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,17 +14,25 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
   patientData: PatientData; hospitalId: string; doctorId: string; slotId: string; upiQrUrl: string | null; onSuccess: () => void; onBack: () => void;
 }) => {
   const { t } = useLanguage();
+  const { patient } = usePatient();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Auto-fill from patient session
+  useEffect(() => {
+    if (patient) {
+      setEmail(patient.email || '');
+      setPhone(patient.phone || '');
+    }
+  }, [patient]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || !transactionId) return;
     setLoading(true);
     try {
-      // Get token number: count existing bookings for this doctor on this date
       const { data: slotData } = await supabase.from('time_slots').select('slot_date').eq('id', slotId).single();
       const bookingDate = slotData?.slot_date;
 
@@ -31,7 +40,6 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
       let waitingTime = 0;
 
       if (bookingDate) {
-        // Count existing booked appointments for this doctor on this date
         const { data: existingSlots } = await supabase
           .from('time_slots')
           .select('id')
@@ -40,13 +48,11 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
           .eq('is_booked', true);
 
         tokenNumber = (existingSlots?.length || 0) + 1;
-        waitingTime = (tokenNumber - 1) * 15; // 15 min per patient
+        waitingTime = (tokenNumber - 1) * 15;
       }
 
-      // Book the slot
       await supabase.from('time_slots').update({ is_booked: true }).eq('id', slotId);
 
-      // Create appointment with token
       const { data: appointment } = await supabase.from('appointments').insert({
         patient_name: patientData.name,
         patient_age: parseInt(patientData.age),
@@ -61,9 +67,9 @@ const PaymentPage = ({ patientData, hospitalId, doctorId, slotId, upiQrUrl, onSu
         token_number: tokenNumber,
         waiting_time: waitingTime,
         status: 'booked',
+        patient_id: patient?.id || null,
       } as any).select().single();
 
-      // Send notifications
       if (appointment) {
         await supabase.functions.invoke('booking-notification', {
           body: { appointmentId: (appointment as any).id },
