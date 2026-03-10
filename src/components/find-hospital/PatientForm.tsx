@@ -16,12 +16,7 @@ const PatientForm = ({ onSubmit }: { onSubmit: (data: PatientData) => void }) =>
   const states = Object.keys(indianStatesAndDistricts).sort();
   const districts = form.state ? indianStatesAndDistricts[form.state] || [] : [];
 
-  // Auto-fill name from patient session
-  useEffect(() => {
-    if (patient?.name && !form.name) {
-      setForm(prev => ({ ...prev, name: patient.name }));
-    }
-  }, [patient]);
+  // No auto-fill for name - patient enters it per appointment
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -12,7 +12,6 @@ import { Loader2 } from 'lucide-react';
 const EditProfile = () => {
   const navigate = useNavigate();
   const { patient, login, isLoggedIn } = usePatient();
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -21,7 +20,6 @@ const EditProfile = () => {
   useEffect(() => {
     if (!isLoggedIn) { navigate('/patient/login'); return; }
     if (patient) {
-      setName(patient.name);
       setEmail(patient.email);
       setPhone(patient.phone);
       setAddress(patient.address);
@@ -35,12 +33,12 @@ const EditProfile = () => {
     try {
       const { error } = await supabase
         .from('patients')
-        .update({ name: name.trim(), email: email.trim() || null, phone: phone.trim(), address: address.trim() || null } as any)
+        .update({ email: email.trim() || null, phone: phone.trim(), address: address.trim() || null })
         .eq('id', patient.id);
 
       if (error) throw error;
 
-      login({ ...patient, name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim() });
+      login({ ...patient, email: email.trim(), phone: phone.trim(), address: address.trim() });
       toast({ title: 'Profile updated successfully!' });
       navigate('/find-hospital');
     } catch (err) {
@@ -59,7 +57,6 @@ const EditProfile = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label>Full Name *</Label><Input required value={name} onChange={e => setName(e.target.value)} /></div>
             <div><Label>Email</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
             <div><Label>Phone *</Label><Input required value={phone} onChange={e => setPhone(e.target.value)} /></div>
             <div><Label>Address</Label><Input value={address} onChange={e => setAddress(e.target.value)} /></div>
