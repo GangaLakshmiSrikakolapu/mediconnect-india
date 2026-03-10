@@ -62,7 +62,7 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <User className="h-4 w-4" />
-                  <span className="max-w-[100px] truncate">{patient?.name}</span>
+                  <span className="max-w-[100px] truncate">Profile</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

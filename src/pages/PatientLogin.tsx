@@ -20,7 +20,6 @@ const PatientLogin = () => {
   const [loginPhone, setLoginPhone] = useState('');
 
   // Register form
-  const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regAddress, setRegAddress] = useState('');
@@ -53,12 +52,11 @@ const PatientLogin = () => {
 
       login({
         id: data.id,
-        name: data.name,
         email: data.email || '',
         phone: data.phone,
         address: data.address || '',
       });
-      toast({ title: `Welcome back, ${data.name}!` });
+      toast({ title: 'Welcome back!' });
       navigate('/find-hospital');
     } catch (err) {
       console.error(err);
@@ -70,7 +68,7 @@ const PatientLogin = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regName.trim() || !regPhone.trim()) return;
+    if (!regPhone.trim()) return;
     setLoading(true);
     try {
       // Check if phone already exists
@@ -91,24 +89,22 @@ const PatientLogin = () => {
       const { data, error } = await supabase
         .from('patients')
         .insert({
-          name: regName.trim(),
           email: regEmail.trim() || null,
           phone: regPhone.trim(),
           address: regAddress.trim() || null,
-        } as any)
+        })
         .select()
         .single();
 
       if (error) throw error;
 
       login({
-        id: (data as any).id,
-        name: (data as any).name,
-        email: (data as any).email || '',
-        phone: (data as any).phone,
-        address: (data as any).address || '',
+        id: data.id,
+        email: data.email || '',
+        phone: data.phone,
+        address: data.address || '',
       });
-      toast({ title: `Welcome, ${regName}! Account created.` });
+      toast({ title: 'Account created successfully!' });
       navigate('/find-hospital');
     } catch (err) {
       console.error(err);
@@ -147,10 +143,6 @@ const PatientLogin = () => {
 
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <Label>Full Name *</Label>
-                  <Input required value={regName} onChange={e => setRegName(e.target.value)} placeholder="Your full name" />
-                </div>
                 <div>
                   <Label>Email</Label>
                   <Input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="your@email.com" />

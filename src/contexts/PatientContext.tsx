@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 export type PatientSession = {
   id: string;
-  name: string;
   email: string;
   phone: string;
   address: string;
