@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Clock } from 'lucide-react';
 
-const SlotBooking = ({ doctorId, bookingDate, onSelectSlot, onBack }: { doctorId: string; bookingDate: string; onSelectSlot: (id: string) => void; onBack: () => void }) => {
+const SlotBooking = ({ doctorId, bookingDate, onSelectSlot, onBack }: { doctorId: string; bookingDate: string; onSelectSlot: (id: string, time?: string) => void; onBack: () => void }) => {
   const { t } = useLanguage();
   const { data: slots, isLoading } = useQuery({
     queryKey: ['slots', doctorId, bookingDate],
