@@ -483,6 +483,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'மருத்துவர் தேர்வு',
       step4: 'ஸ்லாட் முன்பதிவு',
       step5: 'கட்டணம்',
+      step6: 'உறுதிப்படுத்தல்',
       name: 'முழு பெயர்',
       age: 'வயது',
       state: 'மாநிலம்',
