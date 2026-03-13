@@ -39,7 +39,7 @@ const HospitalList = ({ patientData, onSelectHospital, onBack }: { patientData: 
                 </span>
               ))}
             </div>
-            <Button size="sm" onClick={() => onSelectHospital(h.id, h.upi_qr_url)}>{t.findHospital.viewDoctors}</Button>
+            <Button size="sm" onClick={() => onSelectHospital(h.id, h.upi_qr_url, h.name)}>{t.findHospital.viewDoctors}</Button>
           </CardContent>
         </Card>
       ))}

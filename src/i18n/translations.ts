@@ -45,6 +45,7 @@ type TranslationKeys = {
     step3: string;
     step4: string;
     step5: string;
+    step6: string;
     name: string;
     age: string;
     state: string;
