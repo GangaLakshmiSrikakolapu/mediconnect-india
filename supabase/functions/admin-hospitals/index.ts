@@ -8,36 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const doctorNames = [
-  "Arjun Kumar", "Priya Sharma", "Rahul Mehta", "Sneha Reddy",
-  "Vikram Singh", "Anjali Patel", "Deepak Nair", "Swathi Rao",
-  "Arun Joshi", "Kavitha Iyer", "Suresh Menon", "Divya Krishnan",
-  "Manoj Tiwari", "Neha Gupta", "Ravi Shankar", "Pooja Deshmukh",
-  "Sanjay Verma", "Lakshmi Narayan", "Amit Saxena", "Meera Kulkarni",
-  "Kiran Bhat", "Anita Mishra", "Rajesh Pillai", "Sunita Choudhary",
-  "Harish Babu", "Rekha Yadav", "Venkat Raman", "Padma Sundaram",
-  "Ashok Pandey", "Geeta Mahajan", "Naveen Prasad", "Smitha Thomas",
-  "Ganesh Hegde", "Bhavana Shetty", "Pranav Kapoor", "Isha Malhotra",
-  "Tarun Bose", "Nandini Sen", "Siddharth Das", "Ritu Agarwal",
-];
-
-const educationOptions = [
-  "MBBS – AIIMS Delhi", "MD (Cardiology) – PGIMER Chandigarh",
-  "MS (ENT) – JIPMER Puducherry", "MBBS – Osmania Medical College",
-  "MD – Apollo Institute of Medical Sciences", "MBBS – CMC Vellore",
-  "MD (Pediatrics) – KGMU Lucknow", "MS (Orthopedics) – MAMC Delhi",
-  "MBBS – Grant Medical College Mumbai", "MD (Dermatology) – NIMHANS Bangalore",
-  "MBBS – Madras Medical College", "MD (Neurology) – SGPGI Lucknow",
-  "MS (Ophthalmology) – Sankara Nethralaya", "MBBS – KMC Manipal",
-  "MD (Pulmonology) – VPCI Delhi", "MBBS – BHU Varanasi",
-  "MD (Psychiatry) – NIMHANS Bangalore", "MS (General Surgery) – AIIMS Delhi",
-  "MBBS – Armed Forces Medical College Pune", "MD (Gastroenterology) – Asian Institute Hyderabad",
-];
-
 const slotTimes = [
   "09:00", "09:30", "10:00", "10:30", "11:00",
   "14:00", "14:30", "15:00", "15:30", "16:00",
-  "18:00", "18:30", "19:00",
 ];
 
 function generateSlots(doctorId: string): any[] {
@@ -52,25 +25,6 @@ function generateSlots(doctorId: string): any[] {
     }
   }
   return slots;
-}
-
-let nameIndex = 0;
-function getUniqueName(usedNames: Set<string>): string {
-  for (let i = 0; i < doctorNames.length; i++) {
-    const idx = (nameIndex + i) % doctorNames.length;
-    if (!usedNames.has(doctorNames[idx])) {
-      nameIndex = idx + 1;
-      usedNames.add(doctorNames[idx]);
-      return doctorNames[idx];
-    }
-  }
-  const fallback = `Doctor ${Date.now()}`;
-  usedNames.add(fallback);
-  return fallback;
-}
-
-function getEducation(): string {
-  return educationOptions[Math.floor(Math.random() * educationOptions.length)];
 }
 
 serve(async (req) => {
@@ -114,81 +68,38 @@ serve(async (req) => {
       if (error) throw error;
 
       if (status === "approved") {
-        // Move doctors from doctors_request to doctors table and activate
+        // Move doctors from doctors_request to doctors table
         const { data: requestedDoctors } = await supabaseAdmin
           .from("doctors_request").select("*").eq("hospital_id", hospitalId);
 
-        // Activate existing doctors
-        await supabaseAdmin.from("doctors").update({ status: "active" }).eq("hospital_id", hospitalId);
+        if (requestedDoctors && requestedDoctors.length > 0) {
+          const newDoctors = requestedDoctors.map((rd: any) => ({
+            name: rd.doctor_name,
+            specialization: rd.specialization,
+            hospital_id: hospitalId,
+            experience: parseInt(rd.experience) || 0,
+            education_details: rd.education || '',
+            email: rd.email || '',
+            phone: rd.phone || '',
+            age: parseInt(rd.age) || 0,
+            status: "active",
+          }));
 
-        const { data: hospital } = await supabaseAdmin
-          .from("hospitals").select("*").eq("id", hospitalId).single();
+          const { data: created, error: docErr } = await supabaseAdmin
+            .from("doctors").insert(newDoctors).select();
 
-        if (hospital) {
-          const { data: existingDoctors } = await supabaseAdmin
-            .from("doctors").select("id, name, specialization").eq("hospital_id", hospitalId);
-
-          const usedNames = new Set((existingDoctors || []).map((d: any) => d.name));
-          const specCounts: Record<string, number> = {};
-          for (const d of existingDoctors || []) {
-            specCounts[d.specialization] = (specCounts[d.specialization] || 0) + 1;
-          }
-
-          // Generate slots for existing doctors without slots
-          for (const doc of existingDoctors || []) {
-            const { data: existingSlots } = await supabaseAdmin
-              .from("time_slots").select("id").eq("doctor_id", doc.id).limit(1);
-            if (!existingSlots || existingSlots.length === 0) {
-              const slots = generateSlots(doc.id);
-              await supabaseAdmin.from("time_slots").insert(slots);
+          if (docErr) {
+            console.error("Error moving doctors:", docErr);
+          } else if (created) {
+            // Generate slots for each new doctor
+            const allSlots = created.flatMap((doc: any) => generateSlots(doc.id));
+            if (allSlots.length > 0) {
+              const { error: slotErr } = await supabaseAdmin.from("time_slots").insert(allSlots);
+              if (slotErr) console.error("Error creating slots:", slotErr);
             }
-          }
 
-          // Auto-fill: ensure at least 2 doctors per specialization
-          const newDoctors: any[] = [];
-          const specs = hospital.specializations || [];
-          const allSpecs = specs.includes("General Medicine") ? specs : ["General Medicine", ...specs];
-
-          for (const spec of allSpecs) {
-            const existing = specCounts[spec] || 0;
-            const target = spec === "General Medicine" ? 3 : 2;
-            const needed = Math.max(0, target - existing);
-
-            for (let i = 0; i < needed; i++) {
-              newDoctors.push({
-                name: getUniqueName(usedNames),
-                specialization: spec,
-                hospital_id: hospitalId,
-                experience: Math.floor(Math.random() * 8) + 3,
-                education_details: getEducation(),
-                status: "active",
-              });
-            }
-          }
-
-          if (newDoctors.length > 0) {
-            const { data: created, error: docErr } = await supabaseAdmin
-              .from("doctors").insert(newDoctors).select();
-
-            if (docErr) {
-              console.error("Error creating auto-fill doctors:", docErr);
-            } else if (created) {
-              const allSlots = created.flatMap((doc: any) => generateSlots(doc.id));
-              if (allSlots.length > 0) {
-                const { error: slotErr } = await supabaseAdmin.from("time_slots").insert(allSlots);
-                if (slotErr) console.error("Error creating slots:", slotErr);
-              }
-            }
-          }
-          // Generate access codes for all active doctors
-          const { data: allDoctors } = await supabaseAdmin
-            .from("doctors").select("id").eq("hospital_id", hospitalId).eq("status", "active");
-
-          for (const doc of allDoctors || []) {
-            // Check if code already exists
-            const { data: existing } = await supabaseAdmin
-              .from("doctor_access_codes").select("id").eq("doctor_id", doc.id).limit(1);
-            if (!existing || existing.length === 0) {
+            // Generate access codes
+            for (const doc of created) {
               const code = `DOC-${doc.id.substring(0, 8).toUpperCase()}`;
               await supabaseAdmin.from("doctor_access_codes").insert({
                 doctor_id: doc.id,
@@ -196,8 +107,36 @@ serve(async (req) => {
               });
             }
           }
-          console.log("Access codes generated for hospital:", hospitalId);
         }
+
+        // Also activate any existing doctors
+        await supabaseAdmin.from("doctors").update({ status: "active" }).eq("hospital_id", hospitalId);
+
+        // Generate slots for existing doctors without slots
+        const { data: allDoctors } = await supabaseAdmin
+          .from("doctors").select("id").eq("hospital_id", hospitalId).eq("status", "active");
+
+        for (const doc of allDoctors || []) {
+          const { data: existingSlots } = await supabaseAdmin
+            .from("time_slots").select("id").eq("doctor_id", doc.id).limit(1);
+          if (!existingSlots || existingSlots.length === 0) {
+            const slots = generateSlots(doc.id);
+            await supabaseAdmin.from("time_slots").insert(slots);
+          }
+
+          // Ensure access code exists
+          const { data: existingCode } = await supabaseAdmin
+            .from("doctor_access_codes").select("id").eq("doctor_id", doc.id).limit(1);
+          if (!existingCode || existingCode.length === 0) {
+            const code = `DOC-${doc.id.substring(0, 8).toUpperCase()}`;
+            await supabaseAdmin.from("doctor_access_codes").insert({
+              doctor_id: doc.id,
+              access_code: code,
+            });
+          }
+        }
+
+        console.log("Doctors moved and activated for hospital:", hospitalId);
       }
 
       return new Response(JSON.stringify({ success: true }), {

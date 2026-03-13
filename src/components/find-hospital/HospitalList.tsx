@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PatientData } from '@/pages/FindHospital';
 import { MapPin, Stethoscope } from 'lucide-react';
 
-const HospitalList = ({ patientData, onSelectHospital, onBack }: { patientData: PatientData; onSelectHospital: (id: string, qr: string | null) => void; onBack: () => void }) => {
+const HospitalList = ({ patientData, onSelectHospital, onBack }: { patientData: PatientData; onSelectHospital: (id: string, qr: string | null, name?: string) => void; onBack: () => void }) => {
   const { t } = useLanguage();
   const { data: hospitals, isLoading } = useQuery({
     queryKey: ['hospitals', patientData.state, patientData.district, patientData.healthProblem],
@@ -39,7 +39,7 @@ const HospitalList = ({ patientData, onSelectHospital, onBack }: { patientData: 
                 </span>
               ))}
             </div>
-            <Button size="sm" onClick={() => onSelectHospital(h.id, h.upi_qr_url)}>{t.findHospital.viewDoctors}</Button>
+            <Button size="sm" onClick={() => onSelectHospital(h.id, h.upi_qr_url, h.name)}>{t.findHospital.viewDoctors}</Button>
           </CardContent>
         </Card>
       ))}

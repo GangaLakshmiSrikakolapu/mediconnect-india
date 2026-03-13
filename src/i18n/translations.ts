@@ -45,6 +45,7 @@ type TranslationKeys = {
     step3: string;
     step4: string;
     step5: string;
+    step6: string;
     name: string;
     age: string;
     state: string;
@@ -158,6 +159,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'Choose Doctor',
       step4: 'Book Slot',
       step5: 'Payment',
+      step6: 'Confirmation',
       name: 'Full Name',
       age: 'Age',
       state: 'State',
@@ -265,6 +267,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'डॉक्टर चुनें',
       step4: 'स्लॉट बुक करें',
       step5: 'भुगतान',
+      step6: 'पुष्टि',
       name: 'पूरा नाम',
       age: 'आयु',
       state: 'राज्य',
@@ -372,6 +375,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'డాక్టర్ ఎంచుకోండి',
       step4: 'స్లాట్ బుక్ చేయండి',
       step5: 'చెల్లింపు',
+      step6: 'నిర్ధారణ',
       name: 'పూర్తి పేరు',
       age: 'వయస్సు',
       state: 'రాష్ట్రం',
@@ -479,6 +483,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'மருத்துவர் தேர்வு',
       step4: 'ஸ்லாட் முன்பதிவு',
       step5: 'கட்டணம்',
+      step6: 'உறுதிப்படுத்தல்',
       name: 'முழு பெயர்',
       age: 'வயது',
       state: 'மாநிலம்',
@@ -586,6 +591,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'ವೈದ್ಯರ ಆಯ್ಕೆ',
       step4: 'ಸ್ಲಾಟ್ ಬುಕ್ ಮಾಡಿ',
       step5: 'ಪಾವತಿ',
+      step6: 'ದೃಢೀಕರಣ',
       name: 'ಪೂರ್ಣ ಹೆಸರು',
       age: 'ವಯಸ್ಸು',
       state: 'ರಾಜ್ಯ',
@@ -693,6 +699,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'ഡോക്ടർ തിരഞ്ഞെടുക്കുക',
       step4: 'സ്ലോട്ട് ബുക്ക് ചെയ്യുക',
       step5: 'പേയ്മെന്റ്',
+      step6: 'സ്ഥിരീകരണം',
       name: 'പൂർണ്ണ നാമം',
       age: 'പ്രായം',
       state: 'സംസ്ഥാനം',

@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Clock } from 'lucide-react';
 
-const SlotBooking = ({ doctorId, bookingDate, onSelectSlot, onBack }: { doctorId: string; bookingDate: string; onSelectSlot: (id: string) => void; onBack: () => void }) => {
+const SlotBooking = ({ doctorId, bookingDate, onSelectSlot, onBack }: { doctorId: string; bookingDate: string; onSelectSlot: (id: string, time?: string) => void; onBack: () => void }) => {
   const { t } = useLanguage();
   const { data: slots, isLoading } = useQuery({
     queryKey: ['slots', doctorId, bookingDate],
@@ -26,7 +26,7 @@ const SlotBooking = ({ doctorId, bookingDate, onSelectSlot, onBack }: { doctorId
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {slots.map(s => (
-            <Card key={s.id} className="cursor-pointer hover:border-primary hover:shadow-md transition-all" onClick={() => onSelectSlot(s.id)}>
+            <Card key={s.id} className="cursor-pointer hover:border-primary hover:shadow-md transition-all" onClick={() => onSelectSlot(s.id, s.slot_time)}>
               <CardContent className="p-4 text-center">
                 <Clock className="h-5 w-5 text-primary mx-auto mb-1" />
                 <p className="font-medium text-sm">{s.slot_time}</p>

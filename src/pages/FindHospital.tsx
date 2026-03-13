@@ -16,23 +16,42 @@ export type PatientData = {
   bookingDate: string;
 };
 
+export type BookingConfirmation = {
+  tokenNumber: number;
+  doctorName: string;
+  hospitalName: string;
+  appointmentTime: string;
+  bookingDate: string;
+};
+
 const FindHospital = () => {
   const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const [patientData, setPatientData] = useState<PatientData | null>(null);
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
+  const [selectedHospitalName, setSelectedHospitalName] = useState<string>('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
+  const [selectedDoctorName, setSelectedDoctorName] = useState<string>('');
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('');
   const [hospitalUpiQr, setHospitalUpiQr] = useState<string | null>(null);
+  const [bookingConfirmation, setBookingConfirmation] = useState<BookingConfirmation | null>(null);
 
-  const steps = [t.findHospital.step1, t.findHospital.step2, t.findHospital.step3, t.findHospital.step4, t.findHospital.step5];
+  const steps = [
+    t.findHospital.step1,
+    t.findHospital.step2,
+    t.findHospital.step3,
+    t.findHospital.step4,
+    t.findHospital.step5,
+    t.findHospital.step6,
+  ];
 
   return (
     <div className="container py-8 max-w-4xl animate-fade-in">
       <h1 className="font-heading text-3xl font-bold text-center mb-6">{t.findHospital.title}</h1>
 
       {/* Step indicator */}
-      {step <= 5 && (
+      {step <= 6 && (
         <div className="flex items-center justify-center gap-1 mb-8 overflow-x-auto">
           {steps.map((label, i) => (
             <div key={i} className="flex items-center">
@@ -55,7 +74,12 @@ const FindHospital = () => {
       {step === 2 && patientData && (
         <HospitalList
           patientData={patientData}
-          onSelectHospital={(id, qr) => { setSelectedHospitalId(id); setHospitalUpiQr(qr); setStep(3); }}
+          onSelectHospital={(id, qr, name) => {
+            setSelectedHospitalId(id);
+            setHospitalUpiQr(qr);
+            setSelectedHospitalName(name || '');
+            setStep(3);
+          }}
           onBack={() => setStep(1)}
         />
       )}
@@ -63,7 +87,11 @@ const FindHospital = () => {
         <DoctorList
           hospitalId={selectedHospitalId}
           healthProblem={patientData.healthProblem}
-          onSelectDoctor={(id) => { setSelectedDoctorId(id); setStep(4); }}
+          onSelectDoctor={(id, name) => {
+            setSelectedDoctorId(id);
+            setSelectedDoctorName(name || '');
+            setStep(4);
+          }}
           onBack={() => setStep(2)}
         />
       )}
@@ -71,7 +99,11 @@ const FindHospital = () => {
         <SlotBooking
           doctorId={selectedDoctorId}
           bookingDate={patientData.bookingDate}
-          onSelectSlot={(id) => { setSelectedSlotId(id); setStep(5); }}
+          onSelectSlot={(id, time) => {
+            setSelectedSlotId(id);
+            setSelectedSlotTime(time || '');
+            setStep(5);
+          }}
           onBack={() => setStep(3)}
         />
       )}
@@ -82,11 +114,17 @@ const FindHospital = () => {
           doctorId={selectedDoctorId!}
           slotId={selectedSlotId!}
           upiQrUrl={hospitalUpiQr}
-          onSuccess={() => setStep(6)}
+          doctorName={selectedDoctorName}
+          hospitalName={selectedHospitalName}
+          slotTime={selectedSlotTime}
+          onSuccess={(confirmation) => {
+            setBookingConfirmation(confirmation);
+            setStep(6);
+          }}
           onBack={() => setStep(4)}
         />
       )}
-      {step === 6 && <ThankYouPage />}
+      {step === 6 && <ThankYouPage confirmation={bookingConfirmation} />}
     </div>
   );
 };
