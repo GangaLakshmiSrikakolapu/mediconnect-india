@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PatientData } from '@/pages/FindHospital';
 import { MapPin, Stethoscope } from 'lucide-react';
 
-const HospitalList = ({ patientData, onSelectHospital, onBack }: { patientData: PatientData; onSelectHospital: (id: string, qr: string | null) => void; onBack: () => void }) => {
+const HospitalList = ({ patientData, onSelectHospital, onBack }: { patientData: PatientData; onSelectHospital: (id: string, qr: string | null, name?: string) => void; onBack: () => void }) => {
   const { t } = useLanguage();
   const { data: hospitals, isLoading } = useQuery({
     queryKey: ['hospitals', patientData.state, patientData.district, patientData.healthProblem],
