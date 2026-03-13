@@ -55,7 +55,7 @@ const DoctorList = ({ hospitalId, healthProblem, onSelectDoctor, onBack }: { hos
               )}
             </div>
             <div className="flex justify-end">
-              <Button size="sm" onClick={() => onSelectDoctor(d.id)}>{t.findHospital.bookAppointment}</Button>
+              <Button size="sm" onClick={() => onSelectDoctor(d.id, d.name)}>{t.findHospital.bookAppointment}</Button>
             </div>
           </CardContent>
         </Card>
