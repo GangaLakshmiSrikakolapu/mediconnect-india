@@ -699,6 +699,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'ഡോക്ടർ തിരഞ്ഞെടുക്കുക',
       step4: 'സ്ലോട്ട് ബുക്ക് ചെയ്യുക',
       step5: 'പേയ്മെന്റ്',
+      step6: 'സ്ഥിരീകരണം',
       name: 'പൂർണ്ണ നാമം',
       age: 'പ്രായം',
       state: 'സംസ്ഥാനം',
