@@ -267,6 +267,7 @@ export const translations: Record<Language, TranslationKeys> = {
       step3: 'डॉक्टर चुनें',
       step4: 'स्लॉट बुक करें',
       step5: 'भुगतान',
+      step6: 'पुष्टि',
       name: 'पूरा नाम',
       age: 'आयु',
       state: 'राज्य',
