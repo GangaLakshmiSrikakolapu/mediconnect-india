@@ -180,6 +180,11 @@ const AdminDashboard = () => {
                           </Button>
                         </>
                       )}
+                      {h.status === 'approved' && (
+                        <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(h)}>
+                          <Trash2 className="h-4 w-4 mr-1" />Delete
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
