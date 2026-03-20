@@ -20,6 +20,7 @@ const AdminDashboard = () => {
   const [detailHospital, setDetailHospital] = useState<any | null>(null);
   const [hospitalDoctors, setHospitalDoctors] = useState<any[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   useEffect(() => {
     const isAdmin = sessionStorage.getItem('mediconnect_admin');
