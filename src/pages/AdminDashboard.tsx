@@ -54,9 +54,10 @@ const AdminDashboard = () => {
       });
       if (error || data?.error) throw new Error(data?.error || error?.message || 'Failed');
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-hospitals'] });
-      toast({ title: 'Hospital status updated' });
+      const msg = variables.status === 'pending' ? 'Hospital moved back to pending successfully' : 'Hospital status updated';
+      toast({ title: msg });
     },
     onError: (mutationError: Error) => {
       toast({
