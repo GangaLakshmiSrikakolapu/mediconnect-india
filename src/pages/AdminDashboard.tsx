@@ -28,14 +28,19 @@ const AdminDashboard = () => {
 
   const adminKey = sessionStorage.getItem('mediconnect_admin_key') || '';
 
-  const { data: hospitals, isLoading } = useQuery({
+  const { data: hospitals, isLoading, isError, error } = useQuery({
     queryKey: ['admin-hospitals'],
     enabled: Boolean(adminKey),
+    retry: false,
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('admin-hospitals', {
         body: { key: adminKey, action: 'list' },
       });
-      if (error) throw error;
+
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || 'Failed to load hospitals');
+      }
+
       return data?.hospitals || [];
     },
   });
@@ -45,31 +50,65 @@ const AdminDashboard = () => {
       const { data, error } = await supabase.functions.invoke('admin-hospitals', {
         body: { key: adminKey, action: 'update_status', hospitalId: id, status },
       });
-      if (error || data?.error) throw new Error(data?.error || 'Failed');
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'Failed');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-hospitals'] });
       toast({ title: 'Hospital status updated' });
     },
+    onError: (mutationError: Error) => {
+      toast({
+        title: 'Failed to update hospital status',
+        description: mutationError.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   const handleViewDetails = async (hospital: any) => {
-    setDetailHospital(hospital);
-    // Fetch doctors from doctors_request table (submitted by hospital)
-    const { data: reqDoctors } = await supabase.functions.invoke('admin-hospitals', {
-      body: { key: adminKey, action: 'get_doctors_request', hospitalId: hospital.id },
-    });
-    // Also fetch from doctors table
-    const { data: activeDoctors } = await supabase.from('doctors').select('*').eq('hospital_id', hospital.id);
-    // Merge: show request doctors if available, otherwise active doctors
-    const requestDocs = reqDoctors?.doctors || [];
-    const merged = requestDocs.length > 0 ? requestDocs.map((d: any) => ({
-      id: d.id, name: d.doctor_name, email: d.email, phone: d.phone,
-      specialization: d.specialization, education_details: d.education,
-      experience: d.experience, age: d.age,
-    })) : (activeDoctors || []);
-    setHospitalDoctors(merged);
-    setDetailOpen(true);
+    try {
+      setDetailHospital(hospital);
+
+      const { data: reqDoctors, error: reqDoctorsError } = await supabase.functions.invoke('admin-hospitals', {
+        body: { key: adminKey, action: 'get_doctors_request', hospitalId: hospital.id },
+      });
+
+      if (reqDoctorsError || reqDoctors?.error) {
+        throw new Error(reqDoctors?.error || reqDoctorsError?.message || 'Failed to load doctors');
+      }
+
+      const { data: activeDoctors, error: activeDoctorsError } = await supabase
+        .from('doctors')
+        .select('*')
+        .eq('hospital_id', hospital.id);
+
+      if (activeDoctorsError) {
+        throw activeDoctorsError;
+      }
+
+      const requestDocs = reqDoctors?.doctors || [];
+      const merged = requestDocs.length > 0
+        ? requestDocs.map((d: any) => ({
+            id: d.id,
+            name: d.doctor_name,
+            email: d.email,
+            phone: d.phone,
+            specialization: d.specialization,
+            education_details: d.education,
+            experience: d.experience,
+            age: d.age,
+          }))
+        : (activeDoctors || []);
+
+      setHospitalDoctors(merged);
+      setDetailOpen(true);
+    } catch (detailsError) {
+      toast({
+        title: 'Unable to load hospital details',
+        description: detailsError instanceof Error ? detailsError.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -79,6 +118,7 @@ const AdminDashboard = () => {
   };
 
   const filtered = (hospitals as any[])?.filter((h: any) => h.status === activeTab) || [];
+  const hospitalErrorMessage = error instanceof Error ? error.message : 'Unable to fetch hospital data.';
 
   return (
     <div className="container py-8 max-w-4xl animate-fade-in">
@@ -95,8 +135,13 @@ const AdminDashboard = () => {
         </TabsList>
 
         <TabsContent value={activeTab}>
-          {isLoading ? <p className="text-muted-foreground">{t.common.loading}</p> :
-            filtered.length === 0 ? <p className="text-muted-foreground text-center py-8">{t.admin.noRequests}</p> :
+          {isLoading ? (
+            <p className="text-muted-foreground">{t.common.loading}</p>
+          ) : isError ? (
+            <p className="text-destructive text-center py-8">{hospitalErrorMessage}</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">{t.admin.noRequests}</p>
+          ) : (
             <div className="space-y-4">
               {filtered.map((h: any) => (
                 <Card key={h.id}>
@@ -137,11 +182,10 @@ const AdminDashboard = () => {
                 </Card>
               ))}
             </div>
-          }
+          )}
         </TabsContent>
       </Tabs>
 
-      {/* View Details Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -192,4 +236,5 @@ const AdminDashboard = () => {
     </div>
   );
 };
+
 export default AdminDashboard;
