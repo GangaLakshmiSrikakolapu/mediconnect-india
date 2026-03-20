@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, MapPin, LogOut, Eye, GraduationCap, Phone, Mail } from 'lucide-react';
+import { CheckCircle, XCircle, MapPin, LogOut, Eye, GraduationCap, Phone, Mail, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const AdminDashboard = () => {
   const { t } = useLanguage();
@@ -19,6 +20,7 @@ const AdminDashboard = () => {
   const [detailHospital, setDetailHospital] = useState<any | null>(null);
   const [hospitalDoctors, setHospitalDoctors] = useState<any[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   useEffect(() => {
     const isAdmin = sessionStorage.getItem('mediconnect_admin');
@@ -52,9 +54,10 @@ const AdminDashboard = () => {
       });
       if (error || data?.error) throw new Error(data?.error || error?.message || 'Failed');
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-hospitals'] });
-      toast({ title: 'Hospital status updated' });
+      const msg = variables.status === 'pending' ? 'Hospital moved back to pending successfully' : 'Hospital status updated';
+      toast({ title: msg });
     },
     onError: (mutationError: Error) => {
       toast({
@@ -177,6 +180,11 @@ const AdminDashboard = () => {
                           </Button>
                         </>
                       )}
+                      {h.status === 'approved' && (
+                        <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(h)}>
+                          <Trash2 className="h-4 w-4 mr-1" />Delete
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -233,6 +241,26 @@ const AdminDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this hospital from approved list? It will be moved back to Pending Requests.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (deleteTarget) {
+                updateStatus.mutate({ id: deleteTarget.id, status: 'pending' });
+                setDeleteTarget(null);
+              }
+            }}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
