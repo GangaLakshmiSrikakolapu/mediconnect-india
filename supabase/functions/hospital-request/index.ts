@@ -77,40 +77,89 @@ serve(async (req) => {
       }
     }
 
+    // Check for duplicate doctor emails within the submission
+    const doctorEmails = doctors.map((d: any) => d.email.trim().toLowerCase());
+    const uniqueEmails = new Set(doctorEmails);
+    if (uniqueEmails.size !== doctorEmails.length) {
+      return new Response(JSON.stringify({ error: "Duplicate doctor emails found. Each doctor must have a unique email." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Save hospital with status = pending
-    console.log("Creating hospital request:", hospital_name);
-    const { data: hospital, error: hospError } = await supabaseAdmin.from("hospitals").insert({
-      name: hospital_name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      state, district,
-      address: address.trim(),
-      specializations,
-      upi_qr_url: upi_qr_url || null,
-      status: "pending",
-    }).select().single();
+    // Check if hospital with this email already exists
+    const { data: existingHospital } = await supabaseAdmin
+      .from("hospitals")
+      .select("id")
+      .eq("email", email.trim())
+      .maybeSingle();
 
-    if (hospError) {
-      console.error("Hospital insertion error:", hospError);
-      if (hospError.message?.includes("duplicate")) {
-        return new Response(JSON.stringify({ error: "A hospital with this email already exists" }), {
-          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let hospitalId: string;
+    let isUpdate = false;
+
+    if (existingHospital) {
+      // UPDATE existing hospital
+      isUpdate = true;
+      hospitalId = existingHospital.id;
+      console.log("Updating existing hospital:", hospitalId);
+
+      const { error: updateError } = await supabaseAdmin.from("hospitals").update({
+        name: hospital_name.trim(),
+        phone: phone.trim(),
+        state, district,
+        address: address.trim(),
+        specializations,
+        upi_qr_url: upi_qr_url || undefined,
+        status: "pending",
+      }).eq("id", hospitalId);
+
+      if (updateError) {
+        console.error("Hospital update error:", updateError);
+        return new Response(JSON.stringify({ error: "Failed to update hospital: " + updateError.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "Failed to save hospital: " + hospError.message }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      // Delete old doctors_request and doctors for this hospital
+      await supabaseAdmin.from("doctors_request").delete().eq("hospital_id", hospitalId);
+      await supabaseAdmin.from("doctors").delete().eq("hospital_id", hospitalId);
+
+    } else {
+      // INSERT new hospital
+      console.log("Creating new hospital request:", hospital_name);
+      const { data: hospital, error: hospError } = await supabaseAdmin.from("hospitals").insert({
+        name: hospital_name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        state, district,
+        address: address.trim(),
+        specializations,
+        upi_qr_url: upi_qr_url || null,
+        status: "pending",
+      }).select().single();
+
+      if (hospError) {
+        console.error("Hospital insertion error:", hospError);
+        if (hospError.message?.includes("duplicate")) {
+          return new Response(JSON.stringify({ error: "A hospital with this email already exists" }), {
+            status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ error: "Failed to save hospital: " + hospError.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      hospitalId = hospital.id;
     }
 
-    const hospitalId = hospital.id;
-    console.log("Hospital created with ID:", hospitalId);
+    console.log("Hospital ID:", hospitalId, isUpdate ? "(updated)" : "(new)");
 
-    // 2. Save doctors to doctors_request table
+    // Save doctors to doctors_request table
     const doctorRequestRows = doctors.map((d: any) => ({
       hospital_id: hospitalId,
       doctor_name: d.doctor_name.trim(),
@@ -122,7 +171,6 @@ serve(async (req) => {
       age: d.age?.toString() || "",
     }));
 
-    console.log("Inserting", doctorRequestRows.length, "doctor requests");
     const { error: drError } = await supabaseAdmin.from("doctors_request").insert(doctorRequestRows);
     if (drError) {
       console.error("Doctor request insertion error:", drError);
@@ -131,7 +179,7 @@ serve(async (req) => {
       });
     }
 
-    // 3. Also save to doctors table with status = pending
+    // Also save to doctors table with status = pending
     const doctorRows = doctors.map((d: any) => ({
       name: d.doctor_name.trim(),
       age: parseInt(d.age) || 0,
@@ -147,15 +195,17 @@ serve(async (req) => {
     const { error: docError } = await supabaseAdmin.from("doctors").insert(doctorRows);
     if (docError) {
       console.error("Doctor table insertion error:", docError);
-      // Non-critical: doctors_request already saved
     }
 
     console.log("Hospital request submitted successfully:", hospitalId);
     return new Response(JSON.stringify({
       success: true,
-      message: "Hospital request submitted successfully. Your request will be reviewed by Super Admin.",
+      message: isUpdate
+        ? "Hospital request updated successfully. Your changes will be reviewed by Super Admin."
+        : "Hospital request submitted successfully. Your request will be reviewed by Super Admin.",
       hospital_id: hospitalId,
       doctors_count: doctors.length,
+      is_update: isUpdate,
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

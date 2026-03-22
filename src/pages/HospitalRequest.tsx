@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { indianStatesAndDistricts, healthProblems } from '@/data/indianLocations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle, Plus, Trash2, UserPlus, ArrowRight, Loader2 } from 'lucide-react';
+import { CheckCircle, Plus, Trash2, UserPlus, ArrowRight, Loader2, Search, Info } from 'lucide-react';
 
 type DoctorEntry = {
   doctor_name: string;
@@ -46,11 +47,71 @@ const HospitalRequest = () => {
   const [doctors, setDoctors] = useState<DoctorEntry[]>([]);
   const [currentDoctor, setCurrentDoctor] = useState<DoctorEntry>({ ...emptyDoctor });
   const [doctorErrors, setDoctorErrors] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [existingHospitalId, setExistingHospitalId] = useState<string | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
 
   const states = Object.keys(indianStatesAndDistricts).sort();
   const districts = form.state ? indianStatesAndDistricts[form.state] || [] : [];
 
   const toggleSpec = (s: string) => setSpecs(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+
+  const lookupHospitalByEmail = async () => {
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      toast({ title: 'Please enter a valid email first', variant: 'destructive' });
+      return;
+    }
+    setLookingUp(true);
+    try {
+      const { data: hospital } = await supabase
+        .from('hospitals')
+        .select('*')
+        .eq('email', form.email.trim())
+        .maybeSingle();
+
+      if (hospital) {
+        setForm({
+          name: hospital.name,
+          email: hospital.email,
+          phone: hospital.phone,
+          state: hospital.state,
+          district: hospital.district,
+          address: hospital.address,
+        });
+        setSpecs(hospital.specializations || []);
+        setExistingHospitalId(hospital.id);
+        setIsEditMode(true);
+
+        // Fetch existing doctors
+        const { data: existingDoctors } = await supabase
+          .from('doctors_request')
+          .select('*')
+          .eq('hospital_id', hospital.id);
+
+        if (existingDoctors && existingDoctors.length > 0) {
+          setDoctors(existingDoctors.map(d => ({
+            doctor_name: d.doctor_name,
+            age: d.age || '',
+            email: d.email || '',
+            phone: d.phone || '',
+            specialization: d.specialization,
+            education: d.education || '',
+            experience: d.experience || '',
+          })));
+        }
+
+        toast({ title: 'Existing hospital found! Form pre-filled for editing.' });
+      } else {
+        setIsEditMode(false);
+        setExistingHospitalId(null);
+        toast({ title: 'No existing hospital found. You can submit a new request.' });
+      }
+    } catch {
+      toast({ title: 'Error looking up hospital', variant: 'destructive' });
+    } finally {
+      setLookingUp(false);
+    }
+  };
 
   const handleHospitalNext = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,17 +122,26 @@ const HospitalRequest = () => {
     setStep('doctors');
   };
 
-  const addDoctor = (clearAfter: boolean = true) => {
+  const addDoctor = () => {
     const error = validateDoctor(currentDoctor);
     if (error) {
       setDoctorErrors(error);
       toast({ title: error, variant: 'destructive' });
       return false;
     }
+
+    // Check for duplicate doctor by email
+    const duplicateByEmail = doctors.find(d => d.email.trim().toLowerCase() === currentDoctor.email.trim().toLowerCase());
+    if (duplicateByEmail) {
+      const msg = 'Doctor already exists for this hospital (same email)';
+      setDoctorErrors(msg);
+      toast({ title: msg, variant: 'destructive' });
+      return false;
+    }
+
     setDoctorErrors(null);
     setDoctors(prev => [...prev, { ...currentDoctor }]);
     toast({ title: `Dr. ${currentDoctor.doctor_name} added successfully` });
-    // Always clear form after adding
     setCurrentDoctor({ ...emptyDoctor });
     return true;
   };
@@ -87,7 +157,6 @@ const HospitalRequest = () => {
     }
     setLoading(true);
     try {
-      // Upload QR if provided
       let qrUrl: string | null = null;
       if (qrFile) {
         const filePath = `qr/${Date.now()}-${qrFile.name}`;
@@ -102,7 +171,6 @@ const HospitalRequest = () => {
         qrUrl = urlData.publicUrl;
       }
 
-      // Send everything to the edge function
       const payload = {
         hospital_name: form.name,
         email: form.email,
@@ -123,21 +191,15 @@ const HospitalRequest = () => {
         })),
       };
 
-      console.log('Submitting hospital request:', JSON.stringify(payload, null, 2));
-
-      const { data, error } = await supabase.functions.invoke('hospital-request', {
-        body: payload,
-      });
+      const { data, error } = await supabase.functions.invoke('hospital-request', { body: payload });
 
       if (error) {
-        console.error('Edge function invocation error:', error);
         toast({ title: 'Failed to submit hospital request. Please try again.', variant: 'destructive' });
         setLoading(false);
         return;
       }
 
       if (data?.error) {
-        console.error('Backend validation error:', data.error);
         toast({ title: data.error, variant: 'destructive' });
         setLoading(false);
         return;
@@ -156,7 +218,9 @@ const HospitalRequest = () => {
     return (
       <div className="container py-16 text-center animate-fade-in">
         <CheckCircle className="h-16 w-16 text-accent mx-auto mb-4" />
-        <h2 className="font-heading text-2xl font-bold mb-2">Hospital request submitted successfully.</h2>
+        <h2 className="font-heading text-2xl font-bold mb-2">
+          {isEditMode ? 'Hospital request updated successfully.' : 'Hospital request submitted successfully.'}
+        </h2>
         <p className="text-muted-foreground">Your request will be reviewed by Super Admin. {doctors.length} doctor(s) have been submitted.</p>
       </div>
     );
@@ -186,9 +250,26 @@ const HospitalRequest = () => {
         <Card>
           <CardHeader><CardTitle>{t.hospitalRequest.title}</CardTitle></CardHeader>
           <CardContent>
+            {isEditMode && (
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Editing existing hospital request. Changes will be resubmitted for review.
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleHospitalNext} className="space-y-4">
+              <div>
+                <Label>{t.hospitalRequest.email} *</Label>
+                <div className="flex gap-2">
+                  <Input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="flex-1" />
+                  <Button type="button" variant="outline" size="sm" onClick={lookupHospitalByEmail} disabled={lookingUp}>
+                    {lookingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Enter email and click search to check for existing request</p>
+              </div>
               <div><Label>{t.hospitalRequest.hospitalName} *</Label><Input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-              <div><Label>{t.hospitalRequest.email} *</Label><Input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               <div><Label>{t.hospitalRequest.phone} *</Label><Input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
               <div><Label>{t.hospitalRequest.state} *</Label>
                 <Select value={form.state} onValueChange={v => setForm({ ...form, state: v, district: '' })}>
@@ -289,6 +370,12 @@ const HospitalRequest = () => {
 
       {step === 'review' && (
         <div className="space-y-4">
+          {isEditMode && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>You are resubmitting changes for an existing hospital request.</AlertDescription>
+            </Alert>
+          )}
           <Card>
             <CardHeader><CardTitle>Hospital Details</CardTitle></CardHeader>
             <CardContent className="space-y-1 text-sm">
@@ -321,9 +408,9 @@ const HospitalRequest = () => {
             <Button variant="outline" onClick={() => setStep('doctors')}>Back</Button>
             <Button className="flex-1" onClick={handleFinalSubmit} disabled={loading}>
               {loading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting hospital request...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting...</>
               ) : (
-                'SUBMIT HOSPITAL REQUEST'
+                isEditMode ? 'SUBMIT CHANGES' : 'SUBMIT HOSPITAL REQUEST'
               )}
             </Button>
           </div>
