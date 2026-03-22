@@ -1,38 +1,61 @@
 
 
-## Problem
+## Plan: Hospital Re-submission, Doctor Uniqueness, and Full India Language Support
 
-Slots in Step 4 don't appear because they only exist if the admin-hospitals edge function previously generated them during hospital approval. If no DB records exist for a doctor+date combination, the UI shows "No slots available."
+This is a large feature set with three main areas. Here is the implementation plan.
 
-Additionally, the edge function generates afternoon slots at 15:00-16:30 but the frontend filters for 14:00-16:00, causing a mismatch.
+---
 
-## Plan
+### 1. Hospital Re-submission (Edit Existing Request)
 
-### 1. Update SlotBooking.tsx — Client-side fallback slot generation
+**Edge function change** (`supabase/functions/hospital-request/index.ts`):
+- Before inserting a new hospital, query for an existing hospital with matching `email` (the most reliable unique identifier).
+- If found: UPDATE the existing hospital record (name, phone, state, district, address, specializations, upi_qr_url) and set `status = 'pending'`. Delete old `doctors_request` and `doctors` entries for that hospital_id, then insert the new doctors. Return the existing hospital_id.
+- If not found: proceed with current INSERT flow.
 
-When the DB query returns zero slots for a doctor+date, generate default slots client-side with synthetic IDs so the UI always shows clickable slots.
+**Frontend change** (`src/pages/HospitalRequest.tsx`):
+- Add an "email lookup" step: after entering hospital email, check if a hospital with that email already exists via a direct Supabase query.
+- If found, pre-fill all form fields (name, phone, state, district, address, specializations) and fetch existing doctors from `doctors_request` table to pre-populate the doctors list.
+- Change submit button text to "Submit Changes" when editing an existing hospital.
+- Show an info banner: "Editing existing hospital request" when in edit mode.
 
-**Default slots to generate:**
-- Morning: 09:00, 09:30, 10:00, 10:30, 11:00, 11:30
-- Afternoon: 14:00, 14:30, 15:00, 15:30
+### 2. Doctor Duplicate Control
 
-Each synthetic slot gets a generated ID (e.g. `temp-{time}`), `is_booked: false`, and the correct doctor_id/date.
+**Frontend validation** (`src/pages/HospitalRequest.tsx`):
+- In the `addDoctor` function, before adding a doctor to the local list, check if a doctor with the same `email` already exists in the `doctors` array.
+- If duplicate found, show toast error: "Doctor already exists for this hospital".
 
-When a user clicks a synthetic slot, **insert it into the DB** first (to create a real record), then pass that real ID to the next step. This ensures PaymentPage has a valid slot_id.
+**Edge function validation** (`supabase/functions/hospital-request/index.ts`):
+- Before inserting doctors, check for duplicate emails within the submitted doctors array.
+- Return error if duplicates found.
 
-Also fix the afternoon filter to include hour 14 and 15 (already correct in current code, `>= 14 && < 16`).
+**Multiple specializations**: This would require a significant schema change (new junction table). Given the current `doctors` table has a single `specialization` text column, and this is used throughout the app, I recommend deferring this to avoid breaking the booking flow. Instead, allow comma-separated specializations in the existing field for now.
 
-### 2. Update admin-hospitals edge function — Fix slot times
+### 3. Full India Language Support (7 New Languages)
 
-Change `slotTimes` array from `["15:00", "15:30", "16:00", "16:30"]` to `["14:00", "14:30", "15:00", "15:30"]` to match the 2 PM – 4 PM requirement.
+**Update `src/i18n/translations.ts`**:
+- Add Language type: `'mr' | 'gu' | 'bn' | 'pa' | 'or' | 'ur' | 'as'`
+- Add `languageNames` entries for: Marathi, Gujarati, Bengali, Punjabi, Odia, Urdu, Assamese
+- Add full translation objects for all 7 new languages, matching the existing structure (nav, home, insurance, findHospital, payment, thankYou, hospitalMenu, hospitalRequest, admin, common)
 
-### 3. Keep existing UI structure
+**Update `src/contexts/LanguageContext.tsx`**:
+- Language type automatically extends since it imports from translations.
 
-The current Morning/Lunch Break/Afternoon section layout with icons is already correct. No UI changes needed beyond the data generation fix.
+**No other changes needed** — the Header language dropdown already iterates over `languageNames` dynamically.
 
-### Technical Details
+---
 
-- In `SlotBooking.tsx`: after the query, if `slots.length === 0`, build a local array of default slot objects. Use `useMutation` or inline insert to create the DB record on click before advancing.
-- In `admin-hospitals/index.ts`: update line 14 from `"15:00", "15:30", "16:00", "16:30"` to `"14:00", "14:30", "15:00", "15:30"`.
-- The `onSelectSlot` callback will receive the real DB slot ID after insert, keeping PaymentPage's `slotId` valid.
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/i18n/translations.ts` | Add 7 new languages to type, languageNames, and translations object |
+| `src/pages/HospitalRequest.tsx` | Add email lookup for edit mode, pre-fill form, doctor duplicate check |
+| `supabase/functions/hospital-request/index.ts` | Add upsert logic for existing hospitals, doctor duplicate validation |
+
+### Execution Order
+
+1. Add 7 new languages to translations (largest file change)
+2. Update HospitalRequest.tsx with edit mode and doctor duplicate check
+3. Update hospital-request edge function with upsert logic
 
