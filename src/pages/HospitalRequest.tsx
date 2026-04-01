@@ -18,12 +18,12 @@ type DoctorEntry = {
   age: string;
   email: string;
   phone: string;
-  specialization: string;
+  specializations: string[];
   education: string;
   experience: string;
 };
 
-const emptyDoctor: DoctorEntry = { doctor_name: '', age: '', email: '', phone: '', specialization: '', education: '', experience: '' };
+const emptyDoctor: DoctorEntry = { doctor_name: '', age: '', email: '', phone: '', specializations: [], education: '', experience: '' };
 
 const validateDoctor = (d: DoctorEntry): string | null => {
   if (!d.doctor_name.trim()) return 'Doctor Name is required';
