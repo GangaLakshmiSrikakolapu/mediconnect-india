@@ -61,12 +61,24 @@ serve(async (req) => {
       }
     }
 
-    // Check for duplicate doctor emails within the submission
-    const doctorEmails = doctors.map((d: any) => d.email.trim().toLowerCase());
-    const uniqueEmails = new Set(doctorEmails);
-    if (uniqueEmails.size !== doctorEmails.length) {
-      return ok({ success: false, message: "Duplicate doctor emails found. Each doctor must have a unique email." });
+    // Merge doctors with same email — combine specializations
+    const doctorMap = new Map<string, any>();
+    for (const d of doctors) {
+      const key = d.email.trim().toLowerCase();
+      if (doctorMap.has(key)) {
+        const existing = doctorMap.get(key);
+        const newSpecs = Array.isArray(d.specialization) ? d.specialization : [d.specialization];
+        for (const s of newSpecs) {
+          if (!existing.specialization.includes(s)) existing.specialization.push(s);
+        }
+      } else {
+        doctorMap.set(key, {
+          ...d,
+          specialization: Array.isArray(d.specialization) ? [...d.specialization] : [d.specialization],
+        });
+      }
     }
+    const mergedDoctors = Array.from(doctorMap.values());
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
