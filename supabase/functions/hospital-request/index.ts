@@ -145,13 +145,13 @@ serve(async (req) => {
     console.log("Hospital ID:", hospitalId, isUpdate ? "(updated)" : "(new)");
 
     // Save doctors to doctors_request table
-    const doctorRequestRows = doctors.map((d: any) => ({
+    const doctorRequestRows = mergedDoctors.map((d: any) => ({
       hospital_id: hospitalId,
       doctor_name: d.doctor_name.trim(),
       email: d.email?.trim() || "",
       phone: d.phone?.trim() || "",
       education: d.education?.trim() || "",
-      specialization: d.specialization.trim(),
+      specialization: d.specialization,
       experience: d.experience?.toString() || "0",
       age: d.age?.toString() || "",
     }));
@@ -163,12 +163,12 @@ serve(async (req) => {
     }
 
     // Also save to doctors table with status = pending
-    const doctorRows = doctors.map((d: any) => ({
+    const doctorRows = mergedDoctors.map((d: any) => ({
       name: d.doctor_name.trim(),
       age: parseInt(d.age) || 0,
       email: d.email?.trim() || "",
       phone: d.phone?.trim() || "",
-      specialization: d.specialization.trim(),
+      specialization: d.specialization,
       education_details: d.education?.trim() || "",
       experience: parseInt(d.experience) || 0,
       hospital_id: hospitalId,
