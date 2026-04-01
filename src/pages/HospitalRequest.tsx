@@ -130,13 +130,26 @@ const HospitalRequest = () => {
       return false;
     }
 
-    // Check for duplicate doctor by email
-    const duplicateByEmail = doctors.find(d => d.email.trim().toLowerCase() === currentDoctor.email.trim().toLowerCase());
-    if (duplicateByEmail) {
-      const msg = 'Doctor already exists for this hospital (same email)';
-      setDoctorErrors(msg);
-      toast({ title: msg, variant: 'destructive' });
-      return false;
+    // Check for duplicate doctor by email — merge specializations if found
+    const existingIdx = doctors.findIndex(d => d.email.trim().toLowerCase() === currentDoctor.email.trim().toLowerCase());
+    if (existingIdx !== -1) {
+      const existing = doctors[existingIdx];
+      const newSpecs = currentDoctor.specializations.filter(s => !existing.specializations.includes(s));
+      if (newSpecs.length === 0) {
+        const msg = 'Doctor already exists with same specialization(s)';
+        setDoctorErrors(msg);
+        toast({ title: msg, variant: 'destructive' });
+        return false;
+      }
+      // Merge specializations into existing doctor
+      setDoctors(prev => prev.map((d, i) => i === existingIdx
+        ? { ...d, specializations: [...d.specializations, ...newSpecs] }
+        : d
+      ));
+      toast({ title: `Added ${newSpecs.join(', ')} to Dr. ${existing.doctor_name}` });
+      setCurrentDoctor({ ...emptyDoctor });
+      setDoctorErrors(null);
+      return true;
     }
 
     setDoctorErrors(null);
