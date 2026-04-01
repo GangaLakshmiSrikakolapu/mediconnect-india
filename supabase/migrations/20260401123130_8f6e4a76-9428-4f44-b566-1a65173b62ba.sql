@@ -1,0 +1,1 @@
+CREATE POLICY "Anyone can insert slots" ON public.time_slots FOR INSERT TO anon, authenticated WITH CHECK (true);
