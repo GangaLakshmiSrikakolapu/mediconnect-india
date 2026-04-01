@@ -143,7 +143,7 @@ serve(async (req) => {
         if (requestedDoctors && requestedDoctors.length > 0) {
           const newDoctors = requestedDoctors.map((rd: any) => ({
             name: rd.doctor_name,
-            specialization: rd.specialization,
+            specialization: Array.isArray(rd.specialization) ? rd.specialization : [rd.specialization],
             hospital_id: hospitalId,
             experience: parseInt(rd.experience) || 0,
             education_details: rd.education || "",

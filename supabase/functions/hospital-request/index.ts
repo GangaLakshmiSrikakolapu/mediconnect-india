@@ -187,7 +187,7 @@ serve(async (req) => {
         ? "Hospital request updated successfully. Your changes will be reviewed by Super Admin."
         : "Hospital request submitted successfully. Your request will be reviewed by Super Admin.",
       hospital_id: hospitalId,
-      doctors_count: doctors.length,
+      doctors_count: mergedDoctors.length,
       is_update: isUpdate,
     });
 
