@@ -10,7 +10,7 @@ const DoctorList = ({ hospitalId, healthProblem, onSelectDoctor, onBack }: { hos
   const { data: doctors, isLoading } = useQuery({
     queryKey: ['doctors', hospitalId, healthProblem],
     queryFn: async () => {
-      const { data, error } = await supabase.from('doctors').select('*').eq('hospital_id', hospitalId).eq('specialization', healthProblem).eq('status', 'active');
+      const { data, error } = await supabase.from('doctors').select('*').eq('hospital_id', hospitalId).contains('specialization', [healthProblem]).eq('status', 'active');
       if (error) throw error;
       return data;
     },
