@@ -56,7 +56,11 @@ const DoctorLogin = () => {
         .in('id', hospitalIds);
 
       const hospitalMap = new Map((hospitals || []).map(h => [h.id, h.name]));
-      const enriched = data.map(d => ({ ...d, hospital_name: hospitalMap.get(d.hospital_id) || 'Unknown' }));
+      const enriched = data.map(d => ({
+        ...d,
+        hospital_name: hospitalMap.get(d.hospital_id) || 'Unknown',
+        specialization: Array.isArray(d.specialization) ? d.specialization.join(', ') : d.specialization,
+      }));
 
       setDoctors(enriched);
       setStep('select');
