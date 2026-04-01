@@ -204,7 +204,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
-          specialization: string
+          specialization: string[]
           status: string | null
         }
         Insert: {
@@ -217,7 +217,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
-          specialization: string
+          specialization: string[]
           status?: string | null
         }
         Update: {
@@ -230,7 +230,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
-          specialization?: string
+          specialization?: string[]
           status?: string | null
         }
         Relationships: [
@@ -254,7 +254,7 @@ export type Database = {
           hospital_id: string
           id: string
           phone: string | null
-          specialization: string
+          specialization: string[]
         }
         Insert: {
           age?: string | null
@@ -266,7 +266,7 @@ export type Database = {
           hospital_id: string
           id?: string
           phone?: string | null
-          specialization: string
+          specialization: string[]
         }
         Update: {
           age?: string | null
@@ -278,7 +278,7 @@ export type Database = {
           hospital_id?: string
           id?: string
           phone?: string | null
-          specialization?: string
+          specialization?: string[]
         }
         Relationships: []
       }

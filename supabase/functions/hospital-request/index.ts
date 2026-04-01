@@ -61,12 +61,24 @@ serve(async (req) => {
       }
     }
 
-    // Check for duplicate doctor emails within the submission
-    const doctorEmails = doctors.map((d: any) => d.email.trim().toLowerCase());
-    const uniqueEmails = new Set(doctorEmails);
-    if (uniqueEmails.size !== doctorEmails.length) {
-      return ok({ success: false, message: "Duplicate doctor emails found. Each doctor must have a unique email." });
+    // Merge doctors with same email — combine specializations
+    const doctorMap = new Map<string, any>();
+    for (const d of doctors) {
+      const key = d.email.trim().toLowerCase();
+      if (doctorMap.has(key)) {
+        const existing = doctorMap.get(key);
+        const newSpecs = Array.isArray(d.specialization) ? d.specialization : [d.specialization];
+        for (const s of newSpecs) {
+          if (!existing.specialization.includes(s)) existing.specialization.push(s);
+        }
+      } else {
+        doctorMap.set(key, {
+          ...d,
+          specialization: Array.isArray(d.specialization) ? [...d.specialization] : [d.specialization],
+        });
+      }
     }
+    const mergedDoctors = Array.from(doctorMap.values());
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -133,13 +145,13 @@ serve(async (req) => {
     console.log("Hospital ID:", hospitalId, isUpdate ? "(updated)" : "(new)");
 
     // Save doctors to doctors_request table
-    const doctorRequestRows = doctors.map((d: any) => ({
+    const doctorRequestRows = mergedDoctors.map((d: any) => ({
       hospital_id: hospitalId,
       doctor_name: d.doctor_name.trim(),
       email: d.email?.trim() || "",
       phone: d.phone?.trim() || "",
       education: d.education?.trim() || "",
-      specialization: d.specialization.trim(),
+      specialization: d.specialization,
       experience: d.experience?.toString() || "0",
       age: d.age?.toString() || "",
     }));
@@ -151,12 +163,12 @@ serve(async (req) => {
     }
 
     // Also save to doctors table with status = pending
-    const doctorRows = doctors.map((d: any) => ({
+    const doctorRows = mergedDoctors.map((d: any) => ({
       name: d.doctor_name.trim(),
       age: parseInt(d.age) || 0,
       email: d.email?.trim() || "",
       phone: d.phone?.trim() || "",
-      specialization: d.specialization.trim(),
+      specialization: d.specialization,
       education_details: d.education?.trim() || "",
       experience: parseInt(d.experience) || 0,
       hospital_id: hospitalId,
@@ -175,7 +187,7 @@ serve(async (req) => {
         ? "Hospital request updated successfully. Your changes will be reviewed by Super Admin."
         : "Hospital request submitted successfully. Your request will be reviewed by Super Admin.",
       hospital_id: hospitalId,
-      doctors_count: doctors.length,
+      doctors_count: mergedDoctors.length,
       is_update: isUpdate,
     });
 

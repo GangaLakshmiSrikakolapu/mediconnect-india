@@ -18,12 +18,12 @@ type DoctorEntry = {
   age: string;
   email: string;
   phone: string;
-  specialization: string;
+  specializations: string[];
   education: string;
   experience: string;
 };
 
-const emptyDoctor: DoctorEntry = { doctor_name: '', age: '', email: '', phone: '', specialization: '', education: '', experience: '' };
+const emptyDoctor: DoctorEntry = { doctor_name: '', age: '', email: '', phone: '', specializations: [], education: '', experience: '' };
 
 const validateDoctor = (d: DoctorEntry): string | null => {
   if (!d.doctor_name.trim()) return 'Doctor Name is required';
@@ -32,7 +32,7 @@ const validateDoctor = (d: DoctorEntry): string | null => {
   if (!d.phone.trim()) return 'Phone Number is required';
   if (!/^\d{10}$/.test(d.phone.trim())) return 'Phone number must be 10 digits';
   if (!d.education.trim()) return 'Educational Details are required';
-  if (!d.specialization) return 'Specialization is required';
+  if (!d.specializations || d.specializations.length === 0) return 'At least one specialization is required';
   if (!d.experience.trim()) return 'Experience is required';
   return null;
 };
@@ -94,7 +94,7 @@ const HospitalRequest = () => {
             age: d.age || '',
             email: d.email || '',
             phone: d.phone || '',
-            specialization: d.specialization,
+            specializations: Array.isArray(d.specialization) ? d.specialization : [d.specialization].filter(Boolean),
             education: d.education || '',
             experience: d.experience || '',
           })));
@@ -130,13 +130,26 @@ const HospitalRequest = () => {
       return false;
     }
 
-    // Check for duplicate doctor by email
-    const duplicateByEmail = doctors.find(d => d.email.trim().toLowerCase() === currentDoctor.email.trim().toLowerCase());
-    if (duplicateByEmail) {
-      const msg = 'Doctor already exists for this hospital (same email)';
-      setDoctorErrors(msg);
-      toast({ title: msg, variant: 'destructive' });
-      return false;
+    // Check for duplicate doctor by email — merge specializations if found
+    const existingIdx = doctors.findIndex(d => d.email.trim().toLowerCase() === currentDoctor.email.trim().toLowerCase());
+    if (existingIdx !== -1) {
+      const existing = doctors[existingIdx];
+      const newSpecs = currentDoctor.specializations.filter(s => !existing.specializations.includes(s));
+      if (newSpecs.length === 0) {
+        const msg = 'Doctor already exists with same specialization(s)';
+        setDoctorErrors(msg);
+        toast({ title: msg, variant: 'destructive' });
+        return false;
+      }
+      // Merge specializations into existing doctor
+      setDoctors(prev => prev.map((d, i) => i === existingIdx
+        ? { ...d, specializations: [...d.specializations, ...newSpecs] }
+        : d
+      ));
+      toast({ title: `Added ${newSpecs.join(', ')} to Dr. ${existing.doctor_name}` });
+      setCurrentDoctor({ ...emptyDoctor });
+      setDoctorErrors(null);
+      return true;
     }
 
     setDoctorErrors(null);
@@ -185,7 +198,7 @@ const HospitalRequest = () => {
           age: d.age,
           email: d.email,
           phone: d.phone,
-          specialization: d.specialization,
+          specialization: d.specializations,
           education: d.education,
           experience: d.experience,
         })),
@@ -320,11 +333,26 @@ const HospitalRequest = () => {
                 <div><Label>Age</Label><Input type="number" value={currentDoctor.age} onChange={e => setCurrentDoctor({ ...currentDoctor, age: e.target.value })} placeholder="e.g. 35" /></div>
                 <div><Label>Email (Gmail) *</Label><Input type="email" value={currentDoctor.email} onChange={e => { setCurrentDoctor({ ...currentDoctor, email: e.target.value }); setDoctorErrors(null); }} placeholder="doctor@gmail.com" /></div>
                 <div><Label>Phone Number *</Label><Input value={currentDoctor.phone} onChange={e => { setCurrentDoctor({ ...currentDoctor, phone: e.target.value }); setDoctorErrors(null); }} placeholder="10-digit number" /></div>
-                <div><Label>Specialization *</Label>
-                  <Select value={currentDoctor.specialization} onValueChange={v => { setCurrentDoctor({ ...currentDoctor, specialization: v }); setDoctorErrors(null); }}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{specs.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div><Label>Specialization(s) *</Label>
+                  <div className="grid grid-cols-2 gap-1 mt-1">
+                    {specs.map(s => (
+                      <label key={s} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={currentDoctor.specializations.includes(s)}
+                          onCheckedChange={(checked) => {
+                            setCurrentDoctor(prev => ({
+                              ...prev,
+                              specializations: checked
+                                ? [...prev.specializations, s]
+                                : prev.specializations.filter(x => x !== s),
+                            }));
+                            setDoctorErrors(null);
+                          }}
+                        />
+                        {s}
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div><Label>Educational Details *</Label><Input value={currentDoctor.education} onChange={e => { setCurrentDoctor({ ...currentDoctor, education: e.target.value }); setDoctorErrors(null); }} placeholder="e.g. MBBS – AIIMS Delhi" /></div>
                 <div><Label>Experience (years) *</Label><Input type="number" value={currentDoctor.experience} onChange={e => { setCurrentDoctor({ ...currentDoctor, experience: e.target.value }); setDoctorErrors(null); }} placeholder="e.g. 5" /></div>
@@ -350,7 +378,7 @@ const HospitalRequest = () => {
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
                         <p className="font-medium text-sm">Dr. {d.doctor_name}</p>
-                        <p className="text-xs text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
+                        <p className="text-xs text-muted-foreground">{d.specializations.join(', ')} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
                         <p className="text-xs text-muted-foreground">{d.email} {d.phone && `· ${d.phone}`}</p>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => removeDoctor(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -402,7 +430,7 @@ const HospitalRequest = () => {
                 {doctors.map((d, i) => (
                   <div key={i} className="p-3 rounded-lg bg-muted/50 text-sm">
                     <p className="font-medium">Dr. {d.doctor_name}</p>
-                    <p className="text-muted-foreground">{d.specialization} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
+                    <p className="text-muted-foreground">{d.specializations.join(', ')} {d.age && `· Age ${d.age}`} {d.education && `· ${d.education}`} {d.experience && `· ${d.experience} yrs`}</p>
                     {(d.email || d.phone) && <p className="text-muted-foreground">{d.email} {d.phone && `· ${d.phone}`}</p>}
                   </div>
                 ))}
