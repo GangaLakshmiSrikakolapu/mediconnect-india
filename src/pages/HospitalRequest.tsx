@@ -94,7 +94,7 @@ const HospitalRequest = () => {
             age: d.age || '',
             email: d.email || '',
             phone: d.phone || '',
-            specialization: d.specialization,
+            specializations: Array.isArray(d.specialization) ? d.specialization : [d.specialization].filter(Boolean),
             education: d.education || '',
             experience: d.experience || '',
           })));
