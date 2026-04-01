@@ -96,7 +96,7 @@ const AdminDashboard = () => {
             name: d.doctor_name,
             email: d.email,
             phone: d.phone,
-            specialization: d.specialization,
+            specialization: Array.isArray(d.specialization) ? d.specialization.join(', ') : d.specialization,
             education_details: d.education,
             experience: d.experience,
             age: d.age,

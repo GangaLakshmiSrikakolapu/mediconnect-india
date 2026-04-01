@@ -106,7 +106,7 @@ const DoctorDashboard = () => {
             <Stethoscope className="h-6 w-6 text-primary" />
             Dr. {doctor.name}
           </h1>
-          <p className="text-muted-foreground text-sm">{doctor.specialization} · {today}</p>
+          <p className="text-muted-foreground text-sm">{Array.isArray(doctor.specialization) ? doctor.specialization.join(', ') : doctor.specialization} · {today}</p>
         </div>
         <Button variant="outline" size="sm" onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-1" />Logout

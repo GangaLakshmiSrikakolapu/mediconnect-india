@@ -73,7 +73,7 @@ const DoctorLogin = () => {
       id: doc.id,
       name: doc.name,
       hospital_id: doc.hospital_id,
-      specialization: doc.specialization,
+      specialization: Array.isArray(doc.specialization) ? doc.specialization.join(', ') : doc.specialization,
     }));
     navigate('/doctor/dashboard');
   };

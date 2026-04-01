@@ -72,7 +72,7 @@ const MyAppointments = () => {
                     </p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <Stethoscope className="h-3.5 w-3.5" />
-                      Dr. {(appt.doctors as any)?.name || 'N/A'} — {(appt.doctors as any)?.specialization || ''}
+                      Dr. {(appt.doctors as any)?.name || 'N/A'} — {Array.isArray((appt.doctors as any)?.specialization) ? (appt.doctors as any).specialization.join(', ') : ((appt.doctors as any)?.specialization || '')}
                     </p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
