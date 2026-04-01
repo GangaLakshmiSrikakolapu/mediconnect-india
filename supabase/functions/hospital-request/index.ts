@@ -6,6 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const ok = (body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -17,63 +23,41 @@ serve(async (req) => {
 
     // Validate hospital fields
     if (!hospital_name || !hospital_name.trim()) {
-      return new Response(JSON.stringify({ error: "Hospital name is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "Hospital name is required" });
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(JSON.stringify({ error: "Valid hospital email is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "Valid hospital email is required" });
     }
     if (!phone || phone.trim().length < 10) {
-      return new Response(JSON.stringify({ error: "Valid phone number is required (min 10 digits)" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "Valid phone number is required (min 10 digits)" });
     }
     if (!state || !district || !address) {
-      return new Response(JSON.stringify({ error: "State, district and address are required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "State, district and address are required" });
     }
     if (!specializations || specializations.length === 0) {
-      return new Response(JSON.stringify({ error: "At least one specialization is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "At least one specialization is required" });
     }
     if (!doctors || !Array.isArray(doctors) || doctors.length === 0) {
-      return new Response(JSON.stringify({ error: "At least one doctor is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "At least one doctor is required" });
     }
 
     // Validate each doctor
     for (let i = 0; i < doctors.length; i++) {
       const d = doctors[i];
       if (!d.doctor_name?.trim()) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1}: Name is required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return ok({ success: false, message: `Doctor ${i + 1}: Name is required` });
       }
       if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Valid email is required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return ok({ success: false, message: `Doctor ${i + 1} (${d.doctor_name}): Valid email is required` });
       }
       if (!d.phone || d.phone.trim().length < 10) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Valid phone number is required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return ok({ success: false, message: `Doctor ${i + 1} (${d.doctor_name}): Valid phone number is required` });
       }
       if (!d.specialization?.trim()) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Specialization is required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return ok({ success: false, message: `Doctor ${i + 1} (${d.doctor_name}): Specialization is required` });
       }
       if (!d.education?.trim()) {
-        return new Response(JSON.stringify({ error: `Doctor ${i + 1} (${d.doctor_name}): Education details are required` }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return ok({ success: false, message: `Doctor ${i + 1} (${d.doctor_name}): Education details are required` });
       }
     }
 
@@ -81,9 +65,7 @@ serve(async (req) => {
     const doctorEmails = doctors.map((d: any) => d.email.trim().toLowerCase());
     const uniqueEmails = new Set(doctorEmails);
     if (uniqueEmails.size !== doctorEmails.length) {
-      return new Response(JSON.stringify({ error: "Duplicate doctor emails found. Each doctor must have a unique email." }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "Duplicate doctor emails found. Each doctor must have a unique email." });
     }
 
     const supabaseAdmin = createClient(
@@ -102,7 +84,6 @@ serve(async (req) => {
     let isUpdate = false;
 
     if (existingHospital) {
-      // UPDATE existing hospital
       isUpdate = true;
       hospitalId = existingHospital.id;
       console.log("Updating existing hospital:", hospitalId);
@@ -119,17 +100,13 @@ serve(async (req) => {
 
       if (updateError) {
         console.error("Hospital update error:", updateError);
-        return new Response(JSON.stringify({ error: "Failed to update hospital: " + updateError.message }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return ok({ success: false, message: "Failed to update hospital: " + updateError.message });
       }
 
-      // Delete old doctors_request and doctors for this hospital
       await supabaseAdmin.from("doctors_request").delete().eq("hospital_id", hospitalId);
       await supabaseAdmin.from("doctors").delete().eq("hospital_id", hospitalId);
 
     } else {
-      // INSERT new hospital
       console.log("Creating new hospital request:", hospital_name);
       const { data: hospital, error: hospError } = await supabaseAdmin.from("hospitals").insert({
         name: hospital_name.trim(),
@@ -144,14 +121,10 @@ serve(async (req) => {
 
       if (hospError) {
         console.error("Hospital insertion error:", hospError);
-        if (hospError.message?.includes("duplicate")) {
-          return new Response(JSON.stringify({ error: "A hospital with this email already exists" }), {
-            status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        return new Response(JSON.stringify({ error: "Failed to save hospital: " + hospError.message }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const msg = hospError.message?.includes("duplicate")
+          ? "A hospital with this email already exists"
+          : "Failed to save hospital: " + hospError.message;
+        return ok({ success: false, message: msg });
       }
 
       hospitalId = hospital.id;
@@ -174,9 +147,7 @@ serve(async (req) => {
     const { error: drError } = await supabaseAdmin.from("doctors_request").insert(doctorRequestRows);
     if (drError) {
       console.error("Doctor request insertion error:", drError);
-      return new Response(JSON.stringify({ error: "Hospital saved but failed to save doctors: " + drError.message }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ success: false, message: "Hospital saved but failed to save doctors: " + drError.message });
     }
 
     // Also save to doctors table with status = pending
@@ -198,7 +169,7 @@ serve(async (req) => {
     }
 
     console.log("Hospital request submitted successfully:", hospitalId);
-    return new Response(JSON.stringify({
+    return ok({
       success: true,
       message: isUpdate
         ? "Hospital request updated successfully. Your changes will be reviewed by Super Admin."
@@ -206,16 +177,10 @@ serve(async (req) => {
       hospital_id: hospitalId,
       doctors_count: doctors.length,
       is_update: isUpdate,
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (err) {
     console.error("Hospital request error:", err);
-    return new Response(JSON.stringify({ error: "An unexpected error occurred: " + (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return ok({ success: false, message: "An unexpected error occurred: " + (err as Error).message });
   }
 });

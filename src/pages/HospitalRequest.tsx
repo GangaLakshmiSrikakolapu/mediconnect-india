@@ -191,16 +191,22 @@ const HospitalRequest = () => {
         })),
       };
 
+      console.log("Submitting hospital request:", payload);
       const { data, error } = await supabase.functions.invoke('hospital-request', { body: payload });
+      console.log("Response:", data, error);
 
       if (error) {
-        toast({ title: 'Failed to submit hospital request. Please try again.', variant: 'destructive' });
+        const isNetwork = /fetch|network|failed to fetch/i.test(error.message || '');
+        const msg = isNetwork
+          ? 'Server not responding. Please try again later.'
+          : (error.message || 'Failed to submit hospital request. Please try again.');
+        toast({ title: msg, variant: 'destructive' });
         setLoading(false);
         return;
       }
 
-      if (data?.error) {
-        toast({ title: data.error, variant: 'destructive' });
+      if (!data?.success) {
+        toast({ title: data?.message || 'Unable to save hospital request', variant: 'destructive' });
         setLoading(false);
         return;
       }
