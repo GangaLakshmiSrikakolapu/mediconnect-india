@@ -198,7 +198,7 @@ const HospitalRequest = () => {
           age: d.age,
           email: d.email,
           phone: d.phone,
-          specialization: d.specialization,
+          specialization: d.specializations,
           education: d.education,
           experience: d.experience,
         })),
