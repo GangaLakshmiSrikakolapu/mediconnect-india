@@ -333,11 +333,26 @@ const HospitalRequest = () => {
                 <div><Label>Age</Label><Input type="number" value={currentDoctor.age} onChange={e => setCurrentDoctor({ ...currentDoctor, age: e.target.value })} placeholder="e.g. 35" /></div>
                 <div><Label>Email (Gmail) *</Label><Input type="email" value={currentDoctor.email} onChange={e => { setCurrentDoctor({ ...currentDoctor, email: e.target.value }); setDoctorErrors(null); }} placeholder="doctor@gmail.com" /></div>
                 <div><Label>Phone Number *</Label><Input value={currentDoctor.phone} onChange={e => { setCurrentDoctor({ ...currentDoctor, phone: e.target.value }); setDoctorErrors(null); }} placeholder="10-digit number" /></div>
-                <div><Label>Specialization *</Label>
-                  <Select value={currentDoctor.specialization} onValueChange={v => { setCurrentDoctor({ ...currentDoctor, specialization: v }); setDoctorErrors(null); }}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{specs.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div><Label>Specialization(s) *</Label>
+                  <div className="grid grid-cols-2 gap-1 mt-1">
+                    {specs.map(s => (
+                      <label key={s} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={currentDoctor.specializations.includes(s)}
+                          onCheckedChange={(checked) => {
+                            setCurrentDoctor(prev => ({
+                              ...prev,
+                              specializations: checked
+                                ? [...prev.specializations, s]
+                                : prev.specializations.filter(x => x !== s),
+                            }));
+                            setDoctorErrors(null);
+                          }}
+                        />
+                        {s}
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div><Label>Educational Details *</Label><Input value={currentDoctor.education} onChange={e => { setCurrentDoctor({ ...currentDoctor, education: e.target.value }); setDoctorErrors(null); }} placeholder="e.g. MBBS – AIIMS Delhi" /></div>
                 <div><Label>Experience (years) *</Label><Input type="number" value={currentDoctor.experience} onChange={e => { setCurrentDoctor({ ...currentDoctor, experience: e.target.value }); setDoctorErrors(null); }} placeholder="e.g. 5" /></div>
