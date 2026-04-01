@@ -32,7 +32,7 @@ const validateDoctor = (d: DoctorEntry): string | null => {
   if (!d.phone.trim()) return 'Phone Number is required';
   if (!/^\d{10}$/.test(d.phone.trim())) return 'Phone number must be 10 digits';
   if (!d.education.trim()) return 'Educational Details are required';
-  if (!d.specialization) return 'Specialization is required';
+  if (!d.specializations || d.specializations.length === 0) return 'At least one specialization is required';
   if (!d.experience.trim()) return 'Experience is required';
   return null;
 };
