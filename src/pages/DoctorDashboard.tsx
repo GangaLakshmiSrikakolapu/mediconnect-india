@@ -12,7 +12,7 @@ type DoctorInfo = {
   id: string;
   name: string;
   hospital_id: string;
-  specialization: string;
+  specialization: string | string[];
 };
 
 const statusColors: Record<string, string> = {
